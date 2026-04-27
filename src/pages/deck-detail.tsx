@@ -6,6 +6,7 @@ import { useDataRefresh } from "../hooks/use-data-refresh"
 import type { Deck } from "../domain/models/deck"
 import type { Card, CardResult } from "../domain/models/card"
 import type { Document } from "../domain/models/document"
+import { BackButton } from "../components/ui/back-button"
 
 type FormState = { front: string; back: string; documentId: string }
 const EMPTY: FormState = { front: "", back: "", documentId: "" }
@@ -205,13 +206,9 @@ export function DeckDetailPage() {
     <div className="max-w-5xl mx-auto animate-in fade-in duration-300">
       {/* Header */}
       <div className="flex items-center gap-3 px-6 py-4 border-b border-[#e9eaef]">
-        <button
+        <BackButton
           onClick={() => navigate("/dashboard/decks")}
-          className="btn-secondary flex items-center gap-1.5 text-sm"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </button>
+        />
         <h1 className="flex-1 text-lg font-medium text-[#1c1c1e]">
           {deck?.name}
         </h1>

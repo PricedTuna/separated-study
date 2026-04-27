@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { ArrowLeft, Save, Loader2 } from "lucide-react"
+import { Save, Loader2 } from "lucide-react"
 import { MilkdownEditor } from "../components/milkdown-editor"
+import { BackButton } from "../components/ui/back-button"
 import { documentService } from "../lib/container"
 import type { Document } from "../domain/models/document"
 
@@ -42,7 +43,7 @@ export function DocumentDetailPage() {
       }
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
-    } catch (e) {
+    } catch {
       setError("No se pudo guardar el documento. Intenta de nuevo.")
     } finally {
       setSaving(false)
@@ -74,12 +75,10 @@ export function DocumentDetailPage() {
     <div className="max-w-5xl mx-auto animate-in fade-in duration-300">
       {/* Toolbar */}
       <div className="flex items-start gap-3 px-6 py-4">
-        <button
+        <BackButton
           onClick={() => navigate("/dashboard/documents")}
-          className="btn-secondary"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </button>
+          aria-label="Go back to documents"
+        />
         <input
           id="document-title-edit"
           value={title}
