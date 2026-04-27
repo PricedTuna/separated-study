@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { Folder, Plus, Loader2 } from "lucide-react"
+import { Folder } from "lucide-react"
 import { useDecks } from "../hooks/use-decks"
 import { useDataRefresh } from "../hooks/use-data-refresh"
+import { deckService } from "../lib/container"
 import { PageHeader, EmptyState, LoadingState, CreateForm, PageContainer } from "../components/ui/page"
+import { ListItem } from "../components/ui/list-item"
 import type { CreateDeckInput } from "../domain/models/deck"
 
 export function DecksPage() {
@@ -41,6 +43,13 @@ export function DecksPage() {
     setShowForm(false)
     setForm({ name: "", description: "" })
     setError(null)
+  }
+
+  function handleDelete(id: string) {
+    const deck = decks.find(d => d.id === id)
+    if (deck && confirm(`Delete "${deck.name}"? All cards in this deck will also be deleted.`)) {
+      deckService.delete(id).then(() => reload())
+    }
   }
 
   const description = decks.length === 0
@@ -108,40 +117,17 @@ export function DecksPage() {
       ) : (
         <div className="grid gap-3">
           {decks.map((deck, i) => (
-            <button
+            <ListItem
               key={deck.id}
+              icon={<Folder className="w-5 h-5" />}
+              iconBgColor="bg-[#ffd8f4]"
+              iconColor="text-[#c050a0]"
+              title={deck.name}
+              subtitle={deck.description}
               onClick={() => navigate(`/dashboard/decks/${deck.id}`)}
-              className="card-miro p-4 flex items-center gap-4 text-left hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 group animate-in fade-in slide-in-from-bottom-2 duration-300"
-              style={{ animationDelay: `${i * 50}ms` }}
-            >
-              <div className="w-10 h-10 rounded-xl bg-[#ffd8f4] flex items-center justify-center shrink-0">
-                <Folder className="w-5 h-5 text-[#c050a0]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p
-                  className="text-[#1c1c1e] font-medium text-[15px] truncate"
-                  style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
-                >
-                  {deck.name}
-                </p>
-                {deck.description && (
-                  <p className="text-[#555a6a] text-xs truncate mt-0.5">
-                    {deck.description}
-                  </p>
-                )}
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (confirm(`Delete "${deck.name}"?`)) {
-                    remove(deck.id)
-                  }
-                }}
-                className="text-xs text-[#a5a8b5] hover:text-red-400 transition-colors"
-              >
-                Delete
-              </button>
-            </button>
+              onDelete={() => handleDelete(deck.id)}
+              animationDelay={i * 50}
+            />
           ))}
         </div>
       )}
