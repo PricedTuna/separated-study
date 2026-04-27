@@ -1,0 +1,224 @@
+@import "tailwindcss";
+@import "@milkdown/theme-nord/style.css";
+
+/* Miro Design System inspired theme */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --radius: var(--radius);
+}
+
+@layer base {
+  :root {
+    /* Miro-inspired palette */
+    --background: 0 0% 100%;
+    --foreground: 222.2 100% 2%; /* Near Black #1c1c1e */
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 100% 2%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 100% 2%;
+    
+    /* Primary interactive - Blue 450 */
+    --primary: 232 76% 64%; /* #5b76fe */
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary */
+    --secondary: 220 20% 96%;
+    --secondary-foreground: 222.2 100% 2%;
+    
+    /* Muted */
+    --muted: 220 15% 92%;
+    --muted-foreground: 220 12% 40%; /* #555a6a */
+    
+    /* Accent */
+    --accent: 220 15% 96%;
+    --accent-foreground: 222.2 100% 2%;
+    
+    /* Destructive */
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Borders */
+    --border: 220 20% 85%; /* #c7cad5 */
+    --input: 220 20% 91%; /* #e9eaef */
+    --ring: 232 76% 64%; /* #5b76fe */
+    
+    /* Radius */
+    --radius: 0.5rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Noto Sans', system-ui, sans-serif;
+    font-size: 18px;
+    line-height: 1.45;
+  }
+}
+
+/* Smooth page transitions */
+.page-enter {
+  animation: fadeIn 300ms ease-out, zoomIn 300ms ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zoomIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Button styles following Miro */
+.btn-primary {
+  @apply bg-[#5b76fe] text-white px-4 py-2 rounded-lg font-medium;
+  @apply hover:bg-[#4a5fef] active:bg-[#2a41b6] transition-colors;
+}
+
+.btn-secondary {
+  @apply bg-transparent border border-[#c7cad5] text-[#1c1c1e] px-3 py-1.5 rounded-lg;
+  @apply hover:bg-slate-50 transition-colors;
+}
+
+/* Card styles following Miro */
+.card-miro {
+  @apply bg-white rounded-xl border border-[#c7cad5] shadow-sm;
+  box-shadow: rgb(224, 226, 232) 0px 0px 0px 1px;
+}
+
+/* Input styles following Miro */
+.input-miro {
+  @apply bg-white border border-[#e9eaef] rounded-lg px-4 py-3;
+  @apply focus:outline-none focus:ring-2 focus:ring-[#5b76fe] focus:border-transparent;
+  @apply placeholder:text-[#a5a8b5];
+}
+
+/* ── Milkdown Nord theme overrides ────────────────────────────────────────────
+   Force white canvas & near-black text regardless of theme defaults.
+   Scoped to .milkdown so we don't bleed into other components.
+   ──────────────────────────────────────────────────────────────────────────── */
+.milkdown,
+.milkdown .ProseMirror,
+.milkdown-editor .milkdown,
+.milkdown-editor .milkdown .editor {
+  background: #ffffff !important;
+  color: #1c1c1e !important;
+  font-family: 'Noto Sans', system-ui, sans-serif !important;
+  font-size: 16px !important;
+  line-height: 1.6 !important;
+}
+
+.milkdown-editor {
+  background: #ffffff;
+}
+
+.milkdown .ProseMirror {
+  padding: 1.5rem;
+  min-height: 400px;
+}
+
+/* Headings */
+.milkdown .ProseMirror h1 {
+  font-family: 'Roobert PRO Medium', system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.72px;
+  line-height: 1.15;
+  color: #1c1c1e;
+  margin-bottom: 0.75rem;
+}
+.milkdown .ProseMirror h2 {
+  font-family: 'Roobert PRO Medium', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.4px;
+  line-height: 1.2;
+  color: #1c1c1e;
+  margin-bottom: 0.5rem;
+}
+.milkdown .ProseMirror h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1c1c1e;
+}
+
+/* Paragraphs & lists */
+.milkdown .ProseMirror p {
+  color: #1c1c1e;
+  margin-bottom: 0.5rem;
+}
+.milkdown .ProseMirror ul,
+.milkdown .ProseMirror ol {
+  padding-left: 1.5rem;
+  color: #1c1c1e;
+}
+.milkdown .ProseMirror li {
+  margin-bottom: 0.25rem;
+}
+
+/* Inline code */
+.milkdown .ProseMirror code {
+  background: #f0f1f5;
+  color: #1c1c1e;
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  font-size: 0.875em;
+}
+
+/* Code block */
+.milkdown .ProseMirror pre {
+  background: #f0f1f5 !important;
+  color: #1c1c1e !important;
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+/* Blockquote */
+.milkdown .ProseMirror blockquote {
+  border-left: 3px solid #c7cad5;
+  padding-left: 1rem;
+  color: #555a6a;
+  margin-left: 0;
+}
+
+/* Links */
+.milkdown .ProseMirror a {
+  color: #5b76fe;
+  text-decoration: underline;
+}
+
+/* Selection */
+.milkdown .ProseMirror ::selection {
+  background: rgba(91, 118, 254, 0.15);
+}
+
+/* Remove any dark surface the Nord theme injects */
+.milkdown [class*="nord"],
+.milkdown .editor {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}

@@ -1,0 +1,137 @@
+import type { FC, ReactNode } from "react"
+import { Plus, Loader2 } from "lucide-react"
+
+interface PageHeaderProps {
+  title: string
+  description: string
+  buttonLabel: string
+  onButtonClick: () => void
+  buttonId?: string
+}
+
+export const PageHeader: FC<PageHeaderProps> = ({
+  title,
+  description,
+  buttonLabel,
+  onButtonClick,
+  buttonId,
+}) => (
+  <div className="flex items-center justify-between">
+    <div>
+      <h1
+        className="text-[28px] font-medium text-[#1c1c1e] leading-[1.15] tracking-[-0.72px]"
+        style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
+      >
+        {title}
+      </h1>
+      <p className="text-[#555a6a] text-sm mt-0.5">{description}</p>
+    </div>
+    <button id={buttonId} onClick={onButtonClick} className="btn-primary flex items-center gap-2 text-sm">
+      <Plus className="w-4 h-4" />
+      {buttonLabel}
+    </button>
+  </div>
+)
+
+interface EmptyStateProps {
+  icon: ReactNode
+  iconBgColor: string
+  iconColor: string
+  title: string
+  description: string
+  buttonLabel: string
+  onButtonClick: () => void
+}
+
+export const EmptyState: FC<EmptyStateProps> = ({
+  icon,
+  iconBgColor,
+  iconColor,
+  title,
+  description,
+  buttonLabel,
+  onButtonClick,
+}) => (
+  <div className="flex flex-col items-center justify-center py-24 gap-4">
+    <div className={`w-16 h-16 rounded-2xl ${iconBgColor} flex items-center justify-center`}>
+      <div className={iconColor}>{icon}</div>
+    </div>
+    <div className="text-center">
+      <p
+        className="text-[#1c1c1e] font-medium text-lg"
+        style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
+      >
+        {title}
+      </p>
+      <p className="text-[#555a6a] text-sm mt-1">{description}</p>
+    </div>
+    <button onClick={onButtonClick} className="btn-primary flex items-center gap-2 text-sm">
+      <Plus className="w-4 h-4" />
+      {buttonLabel}
+    </button>
+  </div>
+)
+
+export const LoadingState: FC = () => (
+  <div className="flex justify-center py-12">
+    <Loader2 className="w-6 h-6 animate-spin text-[#5b76fe]" />
+  </div>
+)
+
+interface CreateFormProps {
+  title: string
+  onSubmit: (e: React.FormEvent) => void
+  submitLabel: string
+  onCancel: () => void
+  submitDisabled?: boolean
+  loading?: boolean
+  error?: string | null
+  children: ReactNode
+}
+
+export const CreateForm: FC<CreateFormProps> = ({
+  title,
+  onSubmit,
+  submitLabel,
+  onCancel,
+  submitDisabled,
+  loading,
+  error,
+  children,
+}) => (
+  <div className="card-miro p-5 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+    <p
+      className="text-sm font-medium text-[#1c1c1e]"
+      style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
+    >
+      {title}
+    </p>
+    <form onSubmit={onSubmit} className="space-y-3">
+      {children}
+      {error && <p className="text-red-500 text-xs">{error}</p>}
+      <div className="flex gap-2 justify-end">
+        <button type="button" onClick={onCancel} className="btn-secondary text-sm">
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          disabled={submitDisabled || loading}
+          className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+          {submitLabel}
+        </button>
+      </div>
+    </form>
+  </div>
+)
+
+interface PageContainerProps {
+  children: ReactNode
+}
+
+export const PageContainer: FC<PageContainerProps> = ({ children }) => (
+  <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-400">
+    {children}
+  </div>
+)
