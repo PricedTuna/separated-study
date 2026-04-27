@@ -1,18 +1,18 @@
 /**
  * container.ts — Composición de dependencias.
  * Acá es donde "conectás" repositorio → servicio.
- * Para pasar a una API real: reemplazá las implementaciones sin tocar nada más.
+ * Actualmente usa Supabase. Cambiá las import para usar localStorage si hay problemas.
  */
-import { DocumentLocalStorageRepository } from "../infrastructure/local-storage/document-local-storage-repository"
-import { CardLocalStorageRepository } from "../infrastructure/local-storage/card-local-storage-repository"
-import { DeckLocalStorageRepository } from "../infrastructure/local-storage/deck-local-storage-repository"
+import { DocumentSupabaseRepository } from "../infrastructure/supabase/document-supabase-repository"
+import { CardSupabaseRepository } from "../infrastructure/supabase/card-supabase-repository"
+import { DeckSupabaseRepository } from "../infrastructure/supabase/deck-supabase-repository"
 import { DocumentService } from "../services/document-service"
 import { CardService } from "../services/card-service"
 import { DeckService } from "../services/deck-service"
 
-const documentRepo = new DocumentLocalStorageRepository()
-const cardRepo = new CardLocalStorageRepository()
-const deckRepo = new DeckLocalStorageRepository()
+const documentRepo = new DocumentSupabaseRepository()
+const cardRepo = new CardSupabaseRepository()
+const deckRepo = new DeckSupabaseRepository()
 
 export const documentService = new DocumentService(documentRepo)
 export const cardService = new CardService(cardRepo)

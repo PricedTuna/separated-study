@@ -1,53 +1,38 @@
-// @ts-nocheck
-import type { FC } from "react"
-import { useEffect, useRef } from "react"
-import { Crepe } from "@milkdown/crepe"
-import { listener, listenerCtx } from "@milkdown/kit/plugin/listener"
-import "@milkdown/crepe/theme/common/style.css"
-import "@milkdown/crepe/theme/frame.css"
+import React, { forwardRef } from "react";
+import { Crepe, type CrepeConfig } from "@milkdown/crepe";
+import { Milkdown, useEditor } from "@milkdown/react";
+import "@milkdown/crepe/theme/common/style.css";
+import "@milkdown/crepe/theme/frame.css";
 
-interface MilkdownEditorProps {
-  initialValue?: string
-  onChange?: (markdown: string) => void
-  className?: string
-}
+type Props = CrepeConfig & {
+  onChange?: (markdown: string, prevMarkdown: string) => void;
+};
 
-export const MilkdownEditor: FC<MilkdownEditorProps> = ({
-  initialValue = "",
-  onChange,
-  className,
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const onChangeRef = useRef(onChange)
+export const MilkdownEditor = forwardRef<{ getMarkdown: () => string }, Props>(({ onChange, ...props }, ref) => {
+  const crepeRef = React.useRef<Crepe | null>(null)
 
-  useEffect(() => {
-    onChangeRef.current = onChange
-  }, [onChange])
-
-  useEffect(() => {
-    if (!containerRef.current) return
-
+  useEditor((root) => {
     const crepe = new Crepe({
-      root: containerRef.current,
-      defaultValue: initialValue,
-    })
+      root,
+      defaultValue: "# Title",
+      ...props,
+    });
 
-    crepe.create().then(() => {
-      crepe.editor.config((ctx) => {
-        ctx.get(listenerCtx).markdownUpdated((ctx, markdown) => {
-          if (onChangeRef.current) {
-            onChangeRef.current(markdown)
-          }
-        })
+    crepeRef.current = crepe
+
+    crepe.on((listener) => {
+      listener.markdownUpdated((_, markdown, prevMarkdown) => {
+        onChange?.(markdown, prevMarkdown);
       })
     })
 
-    return () => {
-      crepe.destroy()
-    }
-  }, [])
+    return crepe;
+  }, [onChange]);
 
-  return <div ref={containerRef} className={`${className} w-full h-full`} />
-}
+  // Expose getMarkdown via ref
+  React.useImperativeHandle(ref, () => ({
+    getMarkdown: () => crepeRef.current?.getMarkdown() ?? "",
+  }), []);
 
-export { MilkdownProvider } from "@milkdown/react"
+  return <Milkdown />;
+});

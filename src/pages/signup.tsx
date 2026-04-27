@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import { Loader2 } from "lucide-react"
+import { supabase } from "../lib/supabase-client"
 
 export function SignupPage() {
   const navigate = useNavigate()
@@ -9,12 +10,30 @@ export function SignupPage() {
   const [password, setPassword] = useState("")
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!acceptTerms) return
+    setError(null)
     setIsLoading(true)
-    await new Promise((r) => setTimeout(r, 800))
+
+    const { error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name,
+        },
+      },
+    })
+
+    if (authError) {
+      setError(authError.message)
+      setIsLoading(false)
+      return
+    }
+
     navigate("/dashboard/documents")
   }
 
@@ -40,7 +59,7 @@ export function SignupPage() {
 
         <div className="space-y-4">
           <p
-            className="text-[40px] font-medium text-[#1c1c1e] leading-[1.15] tracking-[-1.2px]"
+            className="text-[40px] font-medium text-[#1c1c1e] leading-[1.15] tracking[-1.2px]"
             style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
           >
             Your second<br />brain starts<br />here.
@@ -72,7 +91,7 @@ export function SignupPage() {
 
           <div>
             <h1
-              className="text-[28px] font-medium text-[#1c1c1e] leading-[1.15] tracking-[-0.72px]"
+              className="text-[28px] font-medium text-[#1c1c1e] leading-[1.15] tracking[-0.72px]"
               style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
             >
               Create an account
@@ -118,6 +137,8 @@ export function SignupPage() {
                 className="input-miro w-full text-sm"
               />
             </div>
+
+            {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <div className="flex items-start gap-2.5 pt-1">
               <input

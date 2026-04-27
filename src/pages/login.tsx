@@ -1,17 +1,31 @@
 import { useState, type FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import { Loader2 } from "lucide-react"
+import { supabase } from "../lib/supabase-client"
 
 export function LoginPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+    setError(null)
     setIsLoading(true)
-    await new Promise((r) => setTimeout(r, 800))
+    
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (authError) {
+      setError(authError.message)
+      setIsLoading(false)
+      return
+    }
+
     navigate("/dashboard/documents")
   }
 
@@ -37,7 +51,7 @@ export function LoginPage() {
 
         <div className="space-y-4">
           <p
-            className="text-[40px] font-medium text-[#1c1c1e] leading-[1.15] tracking-[-1.2px]"
+            className="text-[40px] font-medium text-[#1c1c1e] leading-[1.15] tracking[-1.2px]"
             style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
           >
             Think it.<br />Learn it.<br />Remember it.
@@ -69,7 +83,7 @@ export function LoginPage() {
 
           <div>
             <h1
-              className="text-[28px] font-medium text-[#1c1c1e] leading-[1.15] tracking-[-0.72px]"
+              className="text-[28px] font-medium text-[#1c1c1e] leading-[1.15] tracking[-0.72px]"
               style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
             >
               Welcome back
@@ -107,6 +121,8 @@ export function LoginPage() {
                 className="input-miro w-full text-sm"
               />
             </div>
+
+            {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <button
               type="submit"

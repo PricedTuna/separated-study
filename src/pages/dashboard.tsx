@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
-import { MilkdownEditor } from "../components/milkdown-editor"
 
 interface Deck {
   id: string
@@ -41,17 +40,8 @@ export function DashboardPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <MilkdownEditor
-              initialValue={`# ${selectedDeck.name}
-
-Add your notes here...
-
-## Cards to review
-- Card 1
-- Card 2
-`}
-              className="min-h-[400px]"
-            />
+            <h1>wawazo</h1>
+            {/*<MilkdownEditor/>*/}
           </CardContent>
         </Card>
       ) : (

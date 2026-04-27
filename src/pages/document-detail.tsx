@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { ArrowLeft, Save, Loader2 } from "lucide-react"
 import { MilkdownEditor } from "../components/milkdown-editor"
@@ -10,10 +10,12 @@ export function DocumentDetailPage() {
   const navigate = useNavigate()
   const [doc, setDoc] = useState<Document | null>(null)
   const [content, setContent] = useState("")
+  const contentRef = useRef('')
   const [title, setTitle] = useState("")
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     if (!id) return
@@ -27,17 +29,38 @@ export function DocumentDetailPage() {
 
   useEffect(() => { load() }, [load])
 
-  async function handleSave() {
+  const handleSave = useCallback(async () => {
     if (!doc) return
     setSaving(true)
+    setError(null)
     try {
-      await documentService.update(doc.id, { title: title.trim() || doc.title, content })
+      const updated = await documentService.update(doc.id, { title: title.trim() || doc.title, content: contentRef.current })
+      if (updated) {
+        setDoc(updated)
+        setTitle(updated.title)
+        setContent(updated.content)
+      }
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
+    } catch (e) {
+      setError("No se pudo guardar el documento. Intenta de nuevo.")
     } finally {
       setSaving(false)
     }
-  }
+  }, [doc, title])
+
+  // Keyboard shortcut: Ctrl/Cmd + S to save
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const isSaveCombo = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's'
+      if (isSaveCombo) {
+        e.preventDefault()
+        handleSave()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [handleSave])
 
   if (loading) {
     return (
@@ -50,13 +73,12 @@ export function DocumentDetailPage() {
   return (
     <div className="max-w-5xl mx-auto animate-in fade-in duration-300">
       {/* Toolbar */}
-      <div className="flex items-center gap-3 px-6 py-4">
+      <div className="flex items-start gap-3 px-6 py-4">
         <button
           onClick={() => navigate("/dashboard/documents")}
-          className="btn-secondary flex items-center gap-1.5 text-sm"
+          className="btn-secondary"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back
         </button>
         <input
           id="document-title-edit"
@@ -78,11 +100,15 @@ export function DocumentDetailPage() {
         </button>
       </div>
 
+      {error && (
+        <div className="px-6 pb-2 text-sm text-red-600">{error}</div>
+      )}
+
       {/* Editor */}
-      <div className="bg-white min-h-[calc(100vh-120px)] border-l border-[#e5e7eb] pl-6">
+      <div>
         <MilkdownEditor
-          initialValue={content}
-          onChange={setContent}
+          defaultValue={content}
+          onChange={(markdown) => contentRef.current = markdown}
         />
       </div>
     </div>
