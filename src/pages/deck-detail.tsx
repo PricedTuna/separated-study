@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { ArrowLeft, Plus, Loader2, CreditCard, Check, X, Eye, Trash2 } from "lucide-react"
 import { cardService, deckService, documentService } from "../lib/container"
+import { useDataRefresh } from "../hooks/use-data-refresh"
 import type { Deck } from "../domain/models/deck"
 import type { Card, CardResult } from "../domain/models/card"
 import type { Document } from "../domain/models/document"
@@ -12,6 +13,7 @@ const EMPTY: FormState = { front: "", back: "", documentId: "" }
 export function DeckDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { refreshKey } = useDataRefresh()
   const [deck, setDeck] = useState<Deck | null>(null)
   const [cards, setCards] = useState<Card[]>([])
   const [documents, setDocuments] = useState<Document[]>([])
@@ -50,6 +52,13 @@ export function DeckDetailPage() {
   useEffect(() => {
     load()
   }, [load])
+
+  // Also reload when refresh is triggered (e.g., after import)
+  useEffect(() => {
+    if (refreshKey > 0) {
+      load()
+    }
+  }, [refreshKey])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()

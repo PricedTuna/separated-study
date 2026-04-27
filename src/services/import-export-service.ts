@@ -1,5 +1,5 @@
 import { documentService, deckService, cardService } from "../lib/container"
-import type { ExportData, ImportResult } from "../services/import-export-service"
+import type { ExportData, ImportResult } from "./import-export-types"
 
 export async function importData(data: ExportData): Promise<ImportResult> {
   const result: ImportResult = {
@@ -88,3 +88,79 @@ export async function exportAllData(): Promise<ExportData> {
     decks: exportDecks,
   }
 }
+
+// ============================================================================
+// Utility functions
+// ============================================================================
+
+const CURRENT_VERSION = "1.0"
+
+export function exportToJSON(data: ExportData): string {
+  return JSON.stringify(data, null, 2)
+}
+
+export function downloadAsFile(data: ExportData, filename: string): void {
+  const json = exportToJSON(data)
+  const blob = new Blob([json], { type: "application/json" })
+  const url = URL.createObjectURL(blob)
+  
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+export function parseImportFile(content: string): { data: ExportData; error?: string } {
+  try {
+    const parsed = JSON.parse(content)
+    
+    // Validate version
+    if (!parsed.version) {
+      return { data: parsed, error: "Missing version field" }
+    }
+    
+    if (parsed.version !== CURRENT_VERSION) {
+      return { data: parsed, error: `Unsupported version: ${parsed.version}. Expected ${CURRENT_VERSION}` }
+    }
+    
+    return { data: parsed }
+  } catch (e) {
+    return { data: {} as ExportData, error: "Invalid JSON format" }
+  }
+}
+
+export function validateImportData(data: ExportData): string[] {
+  const errors: string[] = []
+  
+  if (!data.documents && !data.decks) {
+    errors.push("Export file must contain at least documents or decks")
+  }
+  
+  if (data.documents) {
+    data.documents.forEach((doc, i) => {
+      if (!doc.title) errors.push(`Document ${i + 1}: missing title`)
+      if (!doc.content) errors.push(`Document ${i + 1}: missing content`)
+    })
+  }
+  
+  if (data.decks) {
+    data.decks.forEach((deck, i) => {
+      if (!deck.name) errors.push(`Deck ${i + 1}: missing name`)
+      
+      if (deck.cards) {
+        deck.cards.forEach((card, j) => {
+          if (!card.front) errors.push(`Deck "${deck.name}" - Card ${j + 1}: missing front`)
+          if (!card.back) errors.push(`Deck "${deck.name}" - Card ${j + 1}: missing back`)
+        })
+      }
+    })
+  }
+  
+  return errors
+}
+
+// Re-export types
+export type { ExportData, ImportResult } from "./import-export-types"

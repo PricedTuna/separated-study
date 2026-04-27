@@ -1,17 +1,24 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Folder, Plus, Loader2 } from "lucide-react"
 import { useDecks } from "../hooks/use-decks"
+import { useDataRefresh } from "../hooks/use-data-refresh"
 import { PageHeader, EmptyState, LoadingState, CreateForm, PageContainer } from "../components/ui/page"
 import type { CreateDeckInput } from "../domain/models/deck"
 
 export function DecksPage() {
-  const { decks, loading, create, remove } = useDecks()
+  const { decks, loading, create, remove, reload } = useDecks()
   const navigate = useNavigate()
+  const { refreshKey } = useDataRefresh()
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: "", description: "" })
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Reload data when refresh is triggered (e.g., after import)
+  useEffect(() => {
+    reload()
+  }, [refreshKey])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()

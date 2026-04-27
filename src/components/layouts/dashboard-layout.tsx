@@ -2,7 +2,8 @@ import { useRef, useState } from "react"
 import { useNavigate, useLocation, Outlet } from "react-router-dom"
 import { Download, Upload, FileJson, Loader2 } from "lucide-react"
 import { Sidebar } from "../ui/sidebar"
-import { exportAllData, importData, downloadAsFile, parseImportFile, validateImportData } from "../services/import-export-service"
+import { useDataRefresh } from "../../hooks/use-data-refresh"
+import { exportAllData, importData, downloadAsFile, parseImportFile, validateImportData } from "../../services/import-export-service"
 
 const sidebarItems = [
   {
@@ -36,6 +37,7 @@ export function DashboardLayout() {
   const [isImporting, setIsImporting] = useState(false)
   const [importResult, setImportResult] = useState<{ success: boolean; message: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { triggerRefresh } = useDataRefresh()
 
   const activeItem =
     sidebarItems.find((item) => location.pathname.startsWith(item.path))?.id ?? "documents"
@@ -90,11 +92,13 @@ export function DashboardLayout() {
           success: true, 
           message: `Imported ${result.documentsImported} documents, ${result.decksImported} decks, ${result.cardsImported} cards. Some errors occurred: ${result.errors.join(", ")}` 
         })
+        triggerRefresh()
       } else {
         setImportResult({ 
           success: true, 
           message: `Successfully imported ${result.documentsImported} documents, ${result.decksImported} decks, and ${result.cardsImported} cards!` 
         })
+        triggerRefresh()
       }
     } catch (e) {
       setImportResult({ success: false, message: `Import failed: ${(e as Error).message}` })

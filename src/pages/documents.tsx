@@ -1,17 +1,24 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { FileText, Plus, Clock, ArrowRight } from "lucide-react"
 import { useDocuments } from "../hooks/use-documents"
+import { useDataRefresh } from "../hooks/use-data-refresh"
 import type { CreateDocumentInput } from "../domain/models/document"
 import { PageHeader, EmptyState, LoadingState, CreateForm, PageContainer } from "../components/ui/page"
 
 export function DocumentsPage() {
-  const { documents, loading, create } = useDocuments()
+  const { documents, loading, create, reload } = useDocuments()
   const navigate = useNavigate()
+  const { refreshKey } = useDataRefresh()
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState("")
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Reload data when refresh is triggered (e.g., after import)
+  useEffect(() => {
+    reload()
+  }, [refreshKey])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
