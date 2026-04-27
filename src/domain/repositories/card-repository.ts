@@ -7,8 +7,10 @@ import type { Card, CreateCardInput, UpdateCardInput } from "../models/card"
 export interface ICardRepository {
   findAll(): Promise<Card[]>
   findById(id: string): Promise<Card | null>
+  findByDeckId(deckId: string): Promise<Card[]>
   findByDocumentId(documentId: string): Promise<Card[]>
   create(input: CreateCardInput): Promise<Card>
   update(id: string, input: UpdateCardInput): Promise<Card>
   delete(id: string): Promise<void>
+  deleteByDeckId(deckId: string): Promise<void>
 }

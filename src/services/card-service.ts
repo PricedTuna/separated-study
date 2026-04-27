@@ -15,6 +15,10 @@ export class CardService {
     return this.repo.findById(id)
   }
 
+  getByDeckId(deckId: string): Promise<Card[]> {
+    return this.repo.findByDeckId(deckId)
+  }
+
   getByDocumentId(documentId: string): Promise<Card[]> {
     return this.repo.findByDocumentId(documentId)
   }
@@ -25,7 +29,8 @@ export class CardService {
     return this.repo.create({
       front: input.front.trim(),
       back: input.back.trim(),
-      documentId: input.documentId,
+      deckId: input.deckId,
+      documentId: input.documentId ?? null,
     })
   }
 

@@ -27,6 +27,10 @@ export class CardLocalStorageRepository implements ICardRepository {
     return loadAll().find((c) => c.id === id) ?? null
   }
 
+  async findByDeckId(deckId: string): Promise<Card[]> {
+    return loadAll().filter((c) => c.deckId === deckId)
+  }
+
   async findByDocumentId(documentId: string): Promise<Card[]> {
     return loadAll().filter((c) => c.documentId === documentId)
   }
@@ -35,7 +39,8 @@ export class CardLocalStorageRepository implements ICardRepository {
     const now = new Date().toISOString()
     const card: Card = {
       id: uuid(),
-      documentId: input.documentId,
+      deckId: input.deckId,
+      documentId: input.documentId ?? null,
       front: input.front,
       back: input.back,
       lastResult: "unseen",
@@ -63,5 +68,9 @@ export class CardLocalStorageRepository implements ICardRepository {
 
   async delete(id: string): Promise<void> {
     saveAll(loadAll().filter((c) => c.id !== id))
+  }
+
+  async deleteByDeckId(deckId: string): Promise<void> {
+    saveAll(loadAll().filter((c) => c.deckId !== deckId))
   }
 }

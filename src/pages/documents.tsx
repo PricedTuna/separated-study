@@ -31,7 +31,7 @@ export function DocumentsPage() {
   }
 
   function formatDate(iso: string) {
-    return new Intl.DateTimeFormat("es", {
+    return new Intl.DateTimeFormat("en", {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -39,24 +39,24 @@ export function DocumentsPage() {
   }
 
   const description = documents.length === 0
-    ? "Todavía no tenés documentos"
-    : `${documents.length} documento${documents.length !== 1 ? "s" : ""}`
+    ? "No documents yet"
+    : `${documents.length} document${documents.length !== 1 ? "s" : ""}`
 
   return (
     <PageContainer>
       <PageHeader
         title="Documents"
         description={description}
-        buttonLabel="Nuevo documento"
+        buttonLabel="New document"
         onButtonClick={() => setShowForm(true)}
         buttonId="create-document-btn"
       />
 
       {showForm && (
         <CreateForm
-          title="Nuevo documento"
+          title="New document"
           onSubmit={handleCreate}
-          submitLabel="Crear"
+          submitLabel="Create"
           onCancel={() => { setShowForm(false); setTitle(""); setError(null) }}
           submitDisabled={!title.trim()}
           loading={creating}
@@ -67,7 +67,7 @@ export function DocumentsPage() {
               id="document-title-input"
               autoFocus
               type="text"
-              placeholder="Título del documento…"
+              placeholder="Document title..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="input-miro flex-1 text-sm"
@@ -83,9 +83,9 @@ export function DocumentsPage() {
           icon={<FileText className="w-8 h-8" />}
           iconBgColor="bg-[#eef0ff]"
           iconColor="text-[#5b76fe]"
-          title="Sin documentos todavía"
-          description="Creá tu primer documento para empezar a estudiar"
-          buttonLabel="Crear documento"
+          title="No documents yet"
+          description="Create your first document to start studying"
+          buttonLabel="Create document"
           onButtonClick={() => setShowForm(true)}
         />
       ) : (

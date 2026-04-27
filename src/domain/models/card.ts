@@ -2,6 +2,7 @@ export type CardResult = "remembered" | "forgot" | "unseen"
 
 export interface Card {
   id: string
+  deckId: string
   documentId: string | null // optional link to a document
   front: string
   back: string
@@ -10,5 +11,5 @@ export interface Card {
   updatedAt: string
 }
 
-export type CreateCardInput = Pick<Card, "front" | "back" | "documentId">
+export type CreateCardInput = Pick<Card, "front" | "back" | "deckId" | "documentId">
 export type UpdateCardInput = Partial<Pick<Card, "front" | "back" | "lastResult" | "documentId">>

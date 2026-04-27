@@ -56,14 +56,14 @@ export function DocumentDetailPage() {
           className="btn-secondary flex items-center gap-1.5 text-sm"
         >
           <ArrowLeft className="w-4 h-4" />
-          Volver
+          Back
         </button>
         <input
           id="document-title-edit"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className="flex-1 text-lg font-medium bg-transparent border-b border-transparent focus:border-[#5b76fe] focus:outline-none pb-2 transition-colors"
-          placeholder="Título…"
+          placeholder="Title..."
         />
         <button
           id="save-document-btn"
@@ -74,7 +74,7 @@ export function DocumentDetailPage() {
           {saving
             ? <Loader2 className="w-4 h-4 animate-spin" />
             : <Save className="w-4 h-4" />}
-          {saved ? "¡Guardado!" : "Guardar"}
+          {saved ? "Saved!" : "Save"}
         </button>
       </div>
 
