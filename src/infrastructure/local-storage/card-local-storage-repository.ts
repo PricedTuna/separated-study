@@ -1,76 +1,44 @@
-import { v4 as uuid } from "../../lib/uuid"
+import { createLocalStorageAdapter } from "../../lib/storage/local-storage-adapter"
 import type { ICardRepository } from "../../domain/repositories/card-repository"
-import type { Card, CreateCardInput, UpdateCardInput } from "../../domain/models/card"
+import type { Card } from "../../domain/models/card"
 
-const KEY = "spaced-study:cards"
-
-function loadAll(): Card[] {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "[]")
-  } catch {
-    return []
-  }
-}
-
-function saveAll(cards: Card[]): void {
-  localStorage.setItem(KEY, JSON.stringify(cards))
-}
+const adapter = createLocalStorageAdapter<Card>("spaced-study:cards")
 
 export class CardLocalStorageRepository implements ICardRepository {
-  async findAll(): Promise<Card[]> {
-    return loadAll().sort(
-      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-    )
+  async findAll() {
+    return adapter.findAll()
   }
 
-  async findById(id: string): Promise<Card | null> {
-    return loadAll().find((c) => c.id === id) ?? null
+  async findById(id: string) {
+    return adapter.findById(id)
   }
 
-  async findByDeckId(deckId: string): Promise<Card[]> {
-    return loadAll().filter((c) => c.deckId === deckId)
+  async findByDeckId(deckId: string) {
+    return adapter.findAll().then((cards) => cards.filter((c) => c.deckId === deckId))
   }
 
-  async findByDocumentId(documentId: string): Promise<Card[]> {
-    return loadAll().filter((c) => c.documentId === documentId)
+  async findByDocumentId(documentId: string) {
+    return adapter.findAll().then((cards) => cards.filter((c) => c.documentId === documentId))
   }
 
-  async create(input: CreateCardInput): Promise<Card> {
-    const now = new Date().toISOString()
-    const card: Card = {
-      id: uuid(),
-      deckId: input.deckId,
-      documentId: input.documentId ?? null,
-      front: input.front,
-      back: input.back,
-      lastResult: "unseen",
-      createdAt: now,
-      updatedAt: now,
-    }
-    saveAll([...loadAll(), card])
-    return card
-  }
-
-  async update(id: string, input: UpdateCardInput): Promise<Card> {
-    const all = loadAll()
-    const idx = all.findIndex((c) => c.id === id)
-    if (idx === -1) throw new Error(`Card ${id} not found`)
-
-    const updated: Card = {
-      ...all[idx],
+  async create(input: { deckId: string; documentId: string | null; front: string; back: string }) {
+    return adapter.create({
       ...input,
-      updatedAt: new Date().toISOString(),
-    }
-    all[idx] = updated
-    saveAll(all)
-    return updated
+      lastResult: "unseen",
+    })
   }
 
-  async delete(id: string): Promise<void> {
-    saveAll(loadAll().filter((c) => c.id !== id))
+  async update(id: string, input: { front?: string; back?: string; lastResult?: string; documentId?: string | null }) {
+    return adapter.update(id, input)
   }
 
-  async deleteByDeckId(deckId: string): Promise<void> {
-    saveAll(loadAll().filter((c) => c.deckId !== deckId))
+  async delete(id: string) {
+    return adapter.delete(id)
+  }
+
+  async deleteByDeckId(deckId: string) {
+    const all = await adapter.findAll()
+    const filtered = all.filter((c) => c.deckId !== deckId)
+    localStorage.setItem("spaced-study:cards", JSON.stringify(filtered))
   }
 }

@@ -1,61 +1,27 @@
-import { v4 as uuid } from "../../lib/uuid"
+import { createLocalStorageAdapter } from "../../lib/storage/local-storage-adapter"
 import type { IDocumentRepository } from "../../domain/repositories/document-repository"
-import type { Document, CreateDocumentInput, UpdateDocumentInput } from "../../domain/models/document"
+import type { Document } from "../../domain/models/document"
 
-const KEY = "spaced-study:documents"
-
-function loadAll(): Document[] {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "[]")
-  } catch {
-    return []
-  }
-}
-
-function saveAll(docs: Document[]): void {
-  localStorage.setItem(KEY, JSON.stringify(docs))
-}
+const adapter = createLocalStorageAdapter<Document>("spaced-study:documents")
 
 export class DocumentLocalStorageRepository implements IDocumentRepository {
-  async findAll(): Promise<Document[]> {
-    return loadAll().sort(
-      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-    )
+  async findAll() {
+    return adapter.findAll()
   }
 
-  async findById(id: string): Promise<Document | null> {
-    return loadAll().find((d) => d.id === id) ?? null
+  async findById(id: string) {
+    return adapter.findById(id)
   }
 
-  async create(input: CreateDocumentInput): Promise<Document> {
-    const now = new Date().toISOString()
-    const doc: Document = {
-      id: uuid(),
-      title: input.title,
-      content: input.content,
-      createdAt: now,
-      updatedAt: now,
-    }
-    saveAll([...loadAll(), doc])
-    return doc
+  async create(input: { title: string; content: string }) {
+    return adapter.create(input)
   }
 
-  async update(id: string, input: UpdateDocumentInput): Promise<Document> {
-    const all = loadAll()
-    const idx = all.findIndex((d) => d.id === id)
-    if (idx === -1) throw new Error(`Document ${id} not found`)
-
-    const updated: Document = {
-      ...all[idx],
-      ...input,
-      updatedAt: new Date().toISOString(),
-    }
-    all[idx] = updated
-    saveAll(all)
-    return updated
+  async update(id: string, input: { title?: string; content?: string }) {
+    return adapter.update(id, input)
   }
 
-  async delete(id: string): Promise<void> {
-    saveAll(loadAll().filter((d) => d.id !== id))
+  async delete(id: string) {
+    return adapter.delete(id)
   }
 }
