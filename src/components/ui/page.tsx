@@ -131,7 +131,7 @@ interface PageContainerProps {
 }
 
 export const PageContainer: FC<PageContainerProps> = ({ children }) => (
-  <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-400">
+  <div className="max-w-4xl mx-auto py-4 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-400">
     {children}
   </div>
 )
