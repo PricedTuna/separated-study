@@ -7,6 +7,7 @@ interface PageHeaderProps {
   buttonLabel: string
   onButtonClick: () => void
   buttonId?: string
+  extraButtons?: ReactNode
 }
 
 export const PageHeader: FC<PageHeaderProps> = ({
@@ -15,6 +16,7 @@ export const PageHeader: FC<PageHeaderProps> = ({
   buttonLabel,
   onButtonClick,
   buttonId,
+  extraButtons,
 }) => (
   <div className="flex items-center justify-between">
     <div>
@@ -26,10 +28,13 @@ export const PageHeader: FC<PageHeaderProps> = ({
       </h1>
       <p className="text-[#555a6a] text-sm mt-0.5">{description}</p>
     </div>
-    <button id={buttonId} onClick={onButtonClick} className="btn-primary flex items-center gap-2 text-sm">
-      <Plus className="w-4 h-4" />
-      {buttonLabel}
-    </button>
+    <div className="flex items-center gap-2">
+      {extraButtons}
+      <button id={buttonId} onClick={onButtonClick} className="btn-primary flex items-center gap-2 text-sm">
+        <Plus className="w-4 h-4" />
+        {buttonLabel}
+      </button>
+    </div>
   </div>
 )
 

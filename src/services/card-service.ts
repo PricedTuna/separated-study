@@ -29,8 +29,8 @@ export class CardService {
     return this.cardRepo.findByDocumentId(documentId)
   }
 
-  async getStudyCards(deckId: string): Promise<Card[]> {
-    const cards = await this.cardRepo.findByDeckId(deckId)
+  async getStudyCards(deckId?: string): Promise<Card[]> {
+    const cards = deckId ? await this.cardRepo.findByDeckId(deckId) : await this.cardRepo.findAll()
     const now = new Date().getTime()
     
     const cardsWithReviews = await Promise.all(

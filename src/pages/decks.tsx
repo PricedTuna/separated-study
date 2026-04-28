@@ -7,7 +7,11 @@ import { deckService } from "../lib/container"
 import { PageHeader, EmptyState, LoadingState, PageContainer } from "../components/ui/page"
 import { Dialog } from "../components/ui/dialog"
 import { ListItem } from "../components/ui/list-item"
+import { StudySession } from "../components/study/study-session"
 import type { CreateDeckInput } from "../domain/models/deck"
+import type { Card, CardResult } from "../domain/models/card"
+import { cardService } from "../lib/container"
+import { BrainCircuit } from "lucide-react"
 
 export function DecksPage() {
   const { decks, loading, create, reload } = useDecks()
@@ -19,6 +23,11 @@ export function DecksPage() {
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Global study state
+  const [globalCards, setGlobalCards] = useState<Card[]>([])
+  const [globalDueCards, setGlobalDueCards] = useState<Card[]>([])
+  const [studyType, setStudyType] = useState<"srs" | "free" | null>(null)
+
   // Reload data when refresh is triggered (e.g., after import)
   useEffect(() => {
     if (!didMountRef.current) {
@@ -27,6 +36,20 @@ export function DecksPage() {
     }
     reload()
   }, [refreshKey, reload])
+
+  // Load global cards
+  const loadGlobalCards = async () => {
+    const [all, due] = await Promise.all([
+      cardService.getAll(),
+      cardService.getStudyCards()
+    ])
+    setGlobalCards(all)
+    setGlobalDueCards(due)
+  }
+
+  useEffect(() => {
+    loadGlobalCards()
+  }, [refreshKey])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -52,12 +75,37 @@ export function DecksPage() {
   }
 
   function handleDelete(id: string) {
-    deckService.delete(id).then(() => reload())
+    deckService.delete(id).then(() => {
+      reload()
+      loadGlobalCards()
+    })
+  }
+
+  async function handleStudyResult(cardId: string, result: CardResult) {
+    if (studyType === "srs") {
+      await cardService.recordResult(cardId, result)
+      await loadGlobalCards()
+    }
+  }
+
+  const exitStudy = () => {
+    setStudyType(null)
   }
 
   const description = decks.length === 0
     ? "No decks yet"
     : `${decks.length} deck${decks.length !== 1 ? "s" : ""}`
+
+  if (studyType) {
+    return (
+      <StudySession
+        mode={studyType}
+        initialCards={studyType === "srs" ? globalDueCards : globalCards}
+        onResult={handleStudyResult}
+        onExit={exitStudy}
+      />
+    )
+  }
 
   return (
     <PageContainer>
@@ -67,6 +115,27 @@ export function DecksPage() {
         buttonLabel="New deck"
         onButtonClick={() => setShowForm(true)}
         buttonId="create-deck-btn"
+        extraButtons={
+          <>
+            {globalCards.length > 0 && (
+              <button
+                onClick={() => setStudyType("free")}
+                className="btn-secondary flex items-center gap-2 text-sm"
+              >
+                Free Mode
+              </button>
+            )}
+            {globalDueCards.length > 0 && (
+              <button
+                onClick={() => setStudyType("srs")}
+                className="btn-primary flex items-center gap-2 text-sm"
+              >
+                <BrainCircuit className="w-4 h-4" />
+                Global Study ({globalDueCards.length})
+              </button>
+            )}
+          </>
+        }
       />
 
       <Dialog

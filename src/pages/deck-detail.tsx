@@ -9,6 +9,7 @@ import type { Card, CardResult } from "../domain/models/card"
 import type { Document } from "../domain/models/document"
 import { BackButton } from "../components/ui/back-button"
 import { Dialog } from "../components/ui/dialog"
+import { StudySession } from "../components/study/study-session"
 
 type FormState = { front: string; back: string; documentId: string }
 const EMPTY: FormState = { front: "", back: "", documentId: "" }
@@ -30,8 +31,7 @@ export function DeckDetailPage() {
   const [flipped, setFlipped] = useState<Record<string, boolean>>({})
 
   // Study mode state
-  const [studyMode, setStudyMode] = useState(false)
-  const [sessionTotal, setSessionTotal] = useState(0)
+  const [studyType, setStudyType] = useState<"srs" | "free" | null>(null)
 
   const load = useCallback(async () => {
     if (!id) return
@@ -96,17 +96,15 @@ export function DeckDetailPage() {
   }
 
   async function handleResult(cardId: string, result: CardResult) {
-    await cardService.recordResult(cardId, result)
-    const [cardsData, studyData] = await Promise.all([
-      cardService.getByDeckId(id!),
-      cardService.getStudyCards(id!)
-    ])
-    setCards(cardsData)
-    setDueCards(studyData)
-    
-    // In study mode, dueCards queue shrinks because answered cards get a future due date.
-    if (studyMode) {
-      setFlipped({})
+    if (studyType === "srs") {
+      await cardService.recordResult(cardId, result)
+      const [cardsData, studyData] = await Promise.all([
+        cardService.getByDeckId(id!),
+        cardService.getStudyCards(id!)
+      ])
+      setCards(cardsData)
+      setDueCards(studyData)
+      
       if (studyData.length === 0) {
         setTimeout(() => exitStudy(), 500)
       }
@@ -134,15 +132,13 @@ export function DeckDetailPage() {
     setFlipped((p) => ({ ...p, [cardId]: !p[cardId] }))
   }
 
-  const startStudy = () => {
-    setStudyMode(true)
-    setSessionTotal(dueCards.length)
+  const startStudy = (type: "srs" | "free") => {
+    setStudyType(type)
     setFlipped({})
   }
 
   const exitStudy = () => {
-    setStudyMode(false)
-    setSessionTotal(0)
+    setStudyType(null)
     setFlipped({})
   }
 
@@ -175,80 +171,15 @@ export function DeckDetailPage() {
     )
   }
 
-  // Study mode - big centered card like Anki
-  if (studyMode && dueCards.length > 0) {
-    const currentCard = dueCards[0]
-    const isFlipped = flipped[currentCard.id] ?? false
-    const progress = Math.min(sessionTotal, sessionTotal - dueCards.length + 1)
-
+  // Study mode via StudySession
+  if (studyType) {
     return (
-      <div className="min-h-screen bg-[#f5f5f5] flex flex-col">
-        {/* Header */}
-        <div className="bg-white border-b border-[#e9eaef] px-6 py-4 flex items-center justify-between shadow-sm">
-          <button onClick={exitStudy} className="btn-secondary flex items-center gap-1.5 text-sm">
-            <ArrowLeft className="w-4 h-4" />
-            Exit Study
-          </button>
-          <div className="text-sm font-medium text-[#555a6a] bg-[#f5f5f5] px-3 py-1 rounded-full">
-            {progress} / {sessionTotal}
-          </div>
-        </div>
-
-        {/* Big Card */}
-        <div className="flex-1 flex flex-col items-center justify-center p-6 pb-24">
-          <div className="w-full max-w-2xl">
-            <div
-              onClick={() => toggleFlip(currentCard.id)}
-              className="bg-white rounded-3xl shadow-lg min-h-[450px] p-12 cursor-pointer transition-all duration-300 hover:shadow-xl flex flex-col items-center justify-center text-center relative border border-[#e9eaef]"
-            >
-              <div className="absolute top-6 left-6 text-xs font-semibold uppercase tracking-widest text-[#a5a8b5] flex items-center gap-2">
-                <BrainCircuit className="w-4 h-4" />
-                {isFlipped ? "Answer" : "Question"}
-              </div>
-              <p className="text-3xl font-medium text-[#1c1c1e] leading-relaxed max-w-prose">
-                {isFlipped ? currentCard.back : currentCard.front}
-              </p>
-              <p className="text-sm font-medium text-[#a5a8b5] mt-12 animate-pulse">
-                Click to {isFlipped ? "see question" : "reveal answer"}
-              </p>
-            </div>
-
-            {/* Answer buttons */}
-            {isFlipped && (
-              <div className="grid grid-cols-4 gap-3 mt-8 w-full animate-in fade-in slide-in-from-bottom-8 duration-300">
-                <button
-                  onClick={() => handleResult(currentCard.id, "again")}
-                  className="flex flex-col items-center justify-center gap-1 py-4 px-2 rounded-2xl bg-white hover:bg-red-50 text-red-600 transition-all shadow-sm border border-[#e9eaef] hover:border-red-200 hover:-translate-y-1"
-                >
-                  <span className="font-bold text-base">Again</span>
-                  <span className="text-xs font-medium opacity-70">&lt; 10m</span>
-                </button>
-                <button
-                  onClick={() => handleResult(currentCard.id, "hard")}
-                  className="flex flex-col items-center justify-center gap-1 py-4 px-2 rounded-2xl bg-white hover:bg-orange-50 text-orange-600 transition-all shadow-sm border border-[#e9eaef] hover:border-orange-200 hover:-translate-y-1"
-                >
-                  <span className="font-bold text-base">Hard</span>
-                  <span className="text-xs font-medium opacity-70">Soon</span>
-                </button>
-                <button
-                  onClick={() => handleResult(currentCard.id, "good")}
-                  className="flex flex-col items-center justify-center gap-1 py-4 px-2 rounded-2xl bg-white hover:bg-green-50 text-green-600 transition-all shadow-sm border border-[#e9eaef] hover:border-green-200 hover:-translate-y-1"
-                >
-                  <span className="font-bold text-base">Good</span>
-                  <span className="text-xs font-medium opacity-70">Normal</span>
-                </button>
-                <button
-                  onClick={() => handleResult(currentCard.id, "easy")}
-                  className="flex flex-col items-center justify-center gap-1 py-4 px-2 rounded-2xl bg-white hover:bg-blue-50 text-blue-600 transition-all shadow-sm border border-[#e9eaef] hover:border-blue-200 hover:-translate-y-1"
-                >
-                  <span className="font-bold text-base">Easy</span>
-                  <span className="text-xs font-medium opacity-70">Later</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <StudySession
+        mode={studyType}
+        initialCards={studyType === "srs" ? dueCards : cards}
+        onResult={handleResult}
+        onExit={exitStudy}
+      />
     )
   }
 
@@ -262,30 +193,40 @@ export function DeckDetailPage() {
         <h1 className="flex-1 text-lg font-medium text-[#1c1c1e]">
           {deck?.name}
         </h1>
-        {dueCards.length > 0 ? (
+        <div className="flex items-center gap-2">
+          {cards.length > 0 && (
+            <button
+              onClick={() => startStudy("free")}
+              className="btn-secondary flex items-center gap-2 text-sm"
+            >
+              Free Mode
+            </button>
+          )}
+          {dueCards.length > 0 ? (
+            <button
+              onClick={() => startStudy("srs")}
+              className="btn-primary flex items-center gap-2 text-sm"
+            >
+              <BrainCircuit className="w-4 h-4" />
+              Study ({dueCards.length} due)
+            </button>
+          ) : cards.length > 0 && (
+            <button
+              disabled
+              className="btn-secondary flex items-center gap-2 text-sm opacity-50 cursor-not-allowed"
+            >
+              <Check className="w-4 h-4" />
+              All caught up!
+            </button>
+          )}
           <button
-            onClick={startStudy}
-            className="btn-primary flex items-center gap-2 text-sm"
+            onClick={() => setShowForm(true)}
+            className="btn-primary flex items-center gap-1.5 text-sm"
           >
-            <BrainCircuit className="w-4 h-4" />
-            Study ({dueCards.length} due)
+            <Plus className="w-4 h-4" />
+            Add Card
           </button>
-        ) : cards.length > 0 && (
-          <button
-            disabled
-            className="btn-secondary flex items-center gap-2 text-sm opacity-50 cursor-not-allowed"
-          >
-            <Check className="w-4 h-4" />
-            All caught up!
-          </button>
-        )}
-        <button
-          onClick={() => setShowForm(true)}
-          className="btn-primary flex items-center gap-1.5 text-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Add Card
-        </button>
+        </div>
       </div>
 
       <Dialog
