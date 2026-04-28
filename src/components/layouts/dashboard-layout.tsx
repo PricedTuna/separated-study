@@ -1,10 +1,11 @@
 import { useRef, useState, useMemo } from "react"
 import { useNavigate, useLocation, Outlet } from "react-router-dom"
-import { Download, Upload, FileJson, Loader2, Folder } from "lucide-react"
-import { Sidebar, type SidebarSection } from "../ui/sidebar"
+import { Download, Upload, FileJson, Loader2, Folder, FileText } from "lucide-react"
+import { Sidebar, type SidebarSection, type SidebarItem } from "../ui/sidebar"
 import { Breadcrumb, type BreadcrumbItem } from "../ui/breadcrumb"
 import { useDataRefresh } from "../../hooks/use-data-refresh"
 import { useFolders } from "../../hooks/use-folders"
+import { useDocuments } from "../../hooks/use-documents"
 import { exportAllData, importData, downloadAsFile, parseImportFile, validateImportData } from "../../services/import-export-service"
 
 const mainNavItems = [
@@ -41,11 +42,7 @@ export function DashboardLayout() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { triggerRefresh } = useDataRefresh()
   const { folders, reload: reloadFolders } = useFolders()
-
-  // Only root folders (no parent)
-  const rootFolders = useMemo(() => {
-    return folders.filter(f => f.parentId === null)
-  }, [folders])
+  const { documents } = useDocuments()
 
   // Determine active section based on path
   const activeSection = useMemo(() => {
@@ -92,6 +89,30 @@ export function DashboardLayout() {
     return path
   }, [folderIdFromUrl, folders])
 
+  // Build folder tree with nested children (folders + documents)
+  const buildFolderTree = (parentId: string | null): SidebarItem[] => {
+    // Get immediate child folders
+    const childFolders = folders
+      .filter(f => f.parentId === parentId)
+      .map(folder => ({
+        id: `folder-${folder.id}`,
+        label: folder.name,
+        icon: <Folder className="w-4 h-4" />,
+        children: buildFolderTree(folder.id),
+      }))
+
+    // Get documents in this folder (ALL levels, not just root)
+    const childDocs = documents
+      .filter(d => d.folderId === parentId)
+      .map(doc => ({
+        id: `doc-${doc.id}`,
+        label: doc.title,
+        icon: <FileText className="w-4 h-4" />,
+      }))
+
+    return [...childFolders, ...childDocs]
+  }
+
   // Build sidebar sections
   const sidebarSections = useMemo((): SidebarSection[] => {
     const sections: SidebarSection[] = []
@@ -105,26 +126,20 @@ export function DashboardLayout() {
       })),
     })
 
-    // Documents section with folders
-    if (activeSection === "documents" || rootFolders.length > 0) {
-      const folderItems = rootFolders.map((folder) => ({
-        id: `folder-${folder.id}`,
-        label: folder.name,
-        path: `/dashboard/folders/${folder.id}`,
-        icon: <Folder className="w-4 h-4" />,
-      }))
-
+    // Documents section with nested folders and documents
+    const folderTree = buildFolderTree(null)
+    if (folderTree.length > 0 || documents.some(d => d.folderId === null)) {
       sections.push({
-        title: "Folders",
-        items: folderItems,
+        title: "Documents",
+        items: folderTree,
       })
     }
 
     return sections
-  }, [activeSection, rootFolders])
+  }, [folders, documents, activeSection, buildFolderTree, mainNavItems, activeSection])
 
   const handleSidebarItemClick = (id: string) => {
-    // Check main nav items first
+    // Check Documents/Decks links
     const mainItem = mainNavItems.find((item) => item.id === id)
     if (mainItem) {
       navigate(mainItem.path)
@@ -135,6 +150,13 @@ export function DashboardLayout() {
     if (id.startsWith("folder-")) {
       const folderId = id.replace("folder-", "")
       navigate(`/dashboard/folders/${folderId}`)
+      return
+    }
+
+    // Check documents
+    if (id.startsWith("doc-")) {
+      const docId = id.replace("doc-", "")
+      navigate(`/dashboard/documents/${docId}`)
       return
     }
   }
@@ -207,28 +229,12 @@ export function DashboardLayout() {
     }
   }
 
-  // Determine active item for sidebar
-  const activeItem = useMemo(() => {
-    const path = location.pathname
-    if (path === "/dashboard/documents" || path.startsWith("/dashboard/documents/")) {
-      return "documents"
-    }
-    if (path.startsWith("/dashboard/folders/")) {
-      const folderId = path.split("/")[3]
-      return `folder-${folderId}`
-    }
-    if (path.startsWith("/dashboard/decks")) {
-      return "decks"
-    }
-    return "documents"
-  }, [location.pathname])
-
   return (
     <div className="min-h-screen flex bg-white">
       <Sidebar
         sections={sidebarSections}
-        activeItem={activeItem}
         onItemClick={handleSidebarItemClick}
+        activePath={breadcrumbItems.map(f => `folder-${f.id}`)}
       />
 
       {/* Main content */}

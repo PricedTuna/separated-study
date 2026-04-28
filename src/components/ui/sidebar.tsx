@@ -1,12 +1,10 @@
-import { type ReactNode } from "react"
-import { cn } from "../../lib/utils"
+import { type ReactNode, useState, useEffect } from "react"
 
 export interface SidebarItem {
   id: string
   label: string
   icon: ReactNode
-  active?: boolean
-  count?: number
+  children?: SidebarItem[]
 }
 
 export interface SidebarSection {
@@ -16,73 +14,110 @@ export interface SidebarSection {
 
 export interface SidebarProps {
   sections?: SidebarSection[]
-  activeItem?: string
   onItemClick?: (id: string) => void
   className?: string
+  activePath?: string[]
 }
 
 /**
- * SidebarItem - Individual navigation item with Notion/Miro style
+ * SidebarItem - Individual navigation item with optional nested children
  */
-export function SidebarItem({
+function SidebarItem({
   item,
-  isActive = false,
-  onClick,
-  className,
+  onItemClick,
+  activePath = [],
 }: {
   item: SidebarItem
-  isActive?: boolean
-  onClick?: () => void
-  className?: string
+  onItemClick?: (id: string) => void
+  activePath?: string[]
 }) {
+  const isActive = activePath.includes(item.id)
+  const hasChildActive = item.children?.some(c => activePath.includes(c.id)) ?? false
+  const childCount = item.children?.length ?? 0
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  useEffect(() => {
+    if (isActive || hasChildActive) {
+      setIsExpanded(true)
+    }
+  }, [activePath.join(","), item.id])
+
+  const handleToggle = () => {
+    setIsExpanded(!isExpanded)
+  }
+
+  const handleClick = () => {
+    onItemClick?.(item.id)
+  }
+
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150",
-        "hover:bg-[#f0f1f5] active:scale-[0.98]",
-        isActive
-          ? "bg-[#eef0ff] text-[#5b76fe] font-medium"
-          : "text-[#555a6a] hover:text-[#1c1c1e] font-normal",
-        className
+    <div>
+      <div className="flex items-center">
+        {childCount > 0 ? (
+          <button
+            onClick={handleToggle}
+            type="button"
+            className="w-8 h-8 flex items-center justify-center cursor-pointer flex-shrink-0 hover:bg-slate-100 rounded"
+          >
+            <svg viewBox="0 0 16 16" fill="currentColor" className={`w-4 h-4 ${isExpanded ? "rotate-90" : ""}`}>
+              <path d="M6 4l4 4-4 4V4z" />
+            </svg>
+          </button>
+        ) : (
+          <span className="w-8 h-8 flex-shrink-0" />
+        )}
+
+        <button
+          type="button"
+          onClick={handleClick}
+          className={`flex-1 flex items-center gap-2 px-2 py-2 rounded-lg text-sm transition-all duration-150 hover:bg-[#f0f1f5] active:scale-[0.98] ${isActive ? "bg-[#eef0ff] text-[#5b76fe] font-medium" : "text-[#555a6a]"}`}
+        >
+          {item.icon}
+          <span className="flex-1 text-left truncate">{item.label}</span>
+        </button>
+      </div>
+
+      {childCount > 0 && isExpanded && (
+        <div className="pl-4">
+          {item.children!.map(child => (
+            <SidebarItem
+              key={child.id}
+              item={child}
+              onItemClick={onItemClick}
+              activePath={activePath}
+            />
+          ))}
+        </div>
       )}
-    >
-      <span className="w-5 h-5 flex-shrink-0">{item.icon}</span>
-      <span className="flex-1 text-left truncate">{item.label}</span>
-      {item.count !== undefined && (
-        <span className="text-xs text-[#a5a8b5] bg-slate-100 px-2 py-0.5 rounded-full">
-          {item.count}
-        </span>
-      )}
-    </button>
+    </div>
   )
 }
 
 /**
- * SidebarSection - Collapsible section
+ * SidebarSection
  */
 function SidebarSection({
   section,
-  activeItem,
   onItemClick,
+  activePath,
 }: {
   section: SidebarSection
-  activeItem?: string
   onItemClick?: (id: string) => void
+  activePath?: string[]
 }) {
   return (
     <div className="space-y-0.5">
       {section.title && (
-        <div className="px-3 py-2 text-xs font-medium text-[#a5a8b5] uppercase tracking-wider">
+        <div className="px-3 py-2 text-xs font-medium text-[#a5a8b5] uppercase">
           {section.title}
         </div>
       )}
-      {section.items.map((item) => (
+      {section.items.map(item => (
         <SidebarItem
           key={item.id}
           item={item}
-          isActive={activeItem === item.id}
-          onClick={() => onItemClick?.(item.id)}
+          onItemClick={onItemClick}
+          activePath={activePath}
         />
       ))}
     </div>
@@ -90,25 +125,18 @@ function SidebarSection({
 }
 
 /**
- * Sidebar - Notion/Miro inspired sidebar with sections support
+ * Sidebar
  */
 export function Sidebar({
   sections = [],
-  activeItem,
   onItemClick,
   className,
+  activePath = [],
 }: SidebarProps) {
   return (
-    <aside
-      className={cn(
-        "w-56 bg-white flex flex-col shrink-0",
-        "border-r border-[#e9eaef]",
-        className
-      )}
-    >
-      {/* Header */}
+    <aside className={`w-56 bg-white flex flex-col shrink-0 border-r border-[#e9eaef] ${className ?? ""}`}>
       <div className="p-3 border-b border-[#e9eaef]">
-        <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+        <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer">
           <div className="w-5 h-5 rounded bg-[#5b76fe] flex items-center justify-center">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="white">
               <path d="M2 2h8v8H2V2zm1 1v6h6V3H3z" />
@@ -118,29 +146,19 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 p-2 overflow-y-auto">
-        {sections.map((section, sIndex) => (
-          <div
-            key={section.title || sIndex}
-            className="animate-in"
-            style={{
-              animationDelay: `${sIndex * 50}ms`,
-              animationFillMode: "backwards",
-            }}
-          >
-            <SidebarSection
-              section={section}
-              activeItem={activeItem}
-              onItemClick={onItemClick}
-            />
-          </div>
+        {sections.map((section, idx) => (
+          <SidebarSection
+            key={section.title || idx}
+            section={section}
+            onItemClick={onItemClick}
+            activePath={activePath}
+          />
         ))}
       </nav>
 
-      {/* Footer */}
       <div className="p-2 border-t border-[#e9eaef]">
-        <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[#555a6a] hover:text-[#1c1c1e] hover:bg-[#f0f1f5] transition-colors">
+        <button type="button" className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[#555a6a] hover:bg-[#f0f1f5]">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
