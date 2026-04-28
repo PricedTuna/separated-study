@@ -1,3 +1,4 @@
+@import "sweetalert2/dist/sweetalert2.css";
 @import "tailwindcss";
 @import "@milkdown/theme-nord/style.css";
 
@@ -221,4 +222,205 @@
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+}
+
+/* ── SweetAlert2 Miro Theme Overrides ────────────────────────────────────────── */
+.swal2-popup-miro {
+  background: #ffffff !important;
+  border-radius: 12px !important;
+  box-shadow: rgb(224, 226, 232) 0px 0px 0px 1px, 0 10px 40px rgba(0, 0, 0, 0.1) !important;
+  padding: 24px !important;
+}
+
+.swal2-title-miro {
+  font-family: 'Roobert PRO Medium', system-ui, sans-serif !important;
+  font-size: 24px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.72px !important;
+  line-height: 1.15 !important;
+  color: #1c1c1e !important;
+  margin-bottom: 12px !important;
+}
+
+.swal2-html-miro {
+  font-family: 'Noto Sans', system-ui, sans-serif !important;
+  font-size: 16px !important;
+  line-height: 1.5 !important;
+  color: #555a6a !important;
+}
+
+/* Confirm button - Primary Blue */
+.swal2-confirm-miro {
+  background: #5b76fe !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-family: 'Roobert PRO Medium', system-ui, sans-serif !important;
+  font-size: 17.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.175px !important;
+  line-height: 1.29 !important;
+  padding: 10px 24px !important;
+  color: #ffffff !important;
+  transition: background 150ms ease !important;
+}
+
+.swal2-confirm-miro:hover {
+  background: #4a5fef !important;
+}
+
+.swal2-confirm-miro:active {
+  background: #2a41b6 !important;
+}
+
+/* Cancel button - Secondary outlined */
+.swal2-cancel-miro {
+  background: transparent !important;
+  border: 1px solid #c7cad5 !important;
+  border-radius: 8px !important;
+  font-family: 'Roobert PRO Medium', system-ui, sans-serif !important;
+  font-size: 17.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.175px !important;
+  line-height: 1.29 !important;
+  padding: 10px 24px !important;
+  color: #1c1c1e !important;
+  transition: all 150ms ease !important;
+}
+
+.swal2-cancel-miro:hover {
+  background: #f5f5f7 !important;
+  border-color: #b8bcc9 !important;
+}
+
+.swal2-cancel-miro:active {
+  background: #e9eaef !important;
+}
+
+/* Input field */
+.swal2-input-miro {
+  background: #ffffff !important;
+  border: 1px solid #e9eaef !important;
+  border-radius: 8px !important;
+  font-family: 'Noto Sans', system-ui, sans-serif !important;
+  font-size: 16px !important;
+  padding: 12px 16px !important;
+  color: #1c1c1e !important;
+  margin: 16px 0 !important;
+}
+
+.swal2-input-miro:focus {
+  outline: none !important;
+  border-color: #5b76fe !important;
+  box-shadow: 0 0 0 3px rgba(91, 118, 254, 0.15) !important;
+}
+
+.swal2-input-miro::placeholder {
+  color: #a5a8b5 !important;
+}
+
+/* Icons */
+.swal2-icon-miro {
+  border-width: 3px !important;
+}
+
+.swal2-icon.swal2-success {
+  border-color: #00b473 !important;
+  color: #00b473 !important;
+}
+
+.swal2-icon.swal2-success .swal2-success-ring {
+  border-color: #00b473 !important;
+}
+
+.swal2-icon.swal2-error {
+  border-color: #e3c5c5 !important;
+  color: #e3c5c5 !important;
+}
+
+.swal2-icon.swal2-warning {
+  border-color: #ffe6cd !important;
+  color: #746019 !important;
+}
+
+.swal2-icon.swal2-info {
+  border-color: #5b76fe !important;
+  color: #5b76fe !important;
+}
+
+/* Toast notifications */
+.swal2-toast-miro {
+  background: #ffffff !important;
+  border-radius: 8px !important;
+  box-shadow: rgb(224, 226, 232) 0px 0px 0px 1px, 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Animation */
+@keyframes swal2-show-miro {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes swal2-backdrop-show-miro {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes swal2-hide-miro {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes swal2-backdrop-hide-miro {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.swal2-show-miro {
+  animation: swal2-show-miro 250ms ease-out !important;
+}
+
+.swal2-backdrop-show-miro {
+  animation: swal2-backdrop-show-miro 200ms ease-out !important;
+}
+
+.swal2-hide-miro {
+  animation: swal2-hide-miro 200ms ease-in !important;
+}
+
+.swal2-backdrop-hide-miro {
+  animation: swal2-backdrop-hide-miro 200ms ease-in !important;
+}
+
+/* Progress bar */
+.swal2-progress-steps-miro .swal2-progress-step {
+  background: #e9eaef !important;
+  border-radius: 50% !important;
+}
+
+.swal2-progress-steps-miro .swal2-progress-step.swal2-active-progress-step {
+  background: #5b76fe !important;
+}
+
+.swal2-progress-steps-miro .swal2-progress-step-line {
+  background: #e9eaef !important;
 }

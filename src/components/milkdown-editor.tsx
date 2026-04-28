@@ -14,7 +14,6 @@ export const MilkdownEditor = forwardRef<{ getMarkdown: () => string }, Props>((
   useEditor((root) => {
     const crepe = new Crepe({
       root,
-      defaultValue: "# Title",
       ...props,
     });
 

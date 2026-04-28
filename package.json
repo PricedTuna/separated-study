@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@gsap/react": "^2.1.2",
     "@milkdown/crepe": "^7.20.0",
     "@milkdown/react": "^7.20.0",
     "@milkdown/theme-nord": "^7.20.0",
@@ -19,10 +20,12 @@
     "@supabase/supabase-js": "^2.105.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "gsap": "^3.15.0",
     "lucide-react": "^1.11.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.14.2",
+    "sweetalert2": "^11.26.24",
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {

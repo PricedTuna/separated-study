@@ -3,10 +3,12 @@ import { useParams, useNavigate } from "react-router-dom"
 import { ArrowLeft, Plus, Loader2, CreditCard, Check, X, Eye, Trash2 } from "lucide-react"
 import { cardService, deckService, documentService } from "../lib/container"
 import { useDataRefresh } from "../hooks/use-data-refresh"
+import { confirmDelete } from "../lib/swal"
 import type { Deck } from "../domain/models/deck"
 import type { Card, CardResult } from "../domain/models/card"
 import type { Document } from "../domain/models/document"
 import { BackButton } from "../components/ui/back-button"
+import { Dialog } from "../components/ui/dialog"
 
 type FormState = { front: string; back: string; documentId: string }
 const EMPTY: FormState = { front: "", back: "", documentId: "" }
@@ -51,15 +53,17 @@ export function DeckDetailPage() {
   }, [id, navigate])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load()
   }, [load])
 
   // Also reload when refresh is triggered (e.g., after import)
   useEffect(() => {
     if (refreshKey > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       load()
     }
-  }, [refreshKey])
+  }, [refreshKey, load])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -101,6 +105,13 @@ export function DeckDetailPage() {
   }
 
   async function handleDelete(cardId: string) {
+    const card = cards.find(c => c.id === cardId)
+    const { isConfirmed } = await confirmDelete(
+      'la tarjeta',
+      card ? `¿Eliminar la tarjeta "${card.front.substring(0, 30)}${card.front.length > 30 ? '...' : ''}"?` : undefined
+    )
+    if (!isConfirmed) return
+    
     await cardService.delete(cardId)
     const cardsData = await cardService.getByDeckId(id!)
     setCards(cardsData)
@@ -120,6 +131,12 @@ export function DeckDetailPage() {
     setStudyMode(false)
     setStudyIndex(0)
     setFlipped({})
+  }
+
+  const closeForm = () => {
+    setShowForm(false)
+    setForm(EMPTY)
+    setError(null)
   }
 
   const resultColor: Record<string, string> = {
@@ -230,80 +247,83 @@ export function DeckDetailPage() {
         </button>
       </div>
 
-      {/* Create form */}
-      {showForm && (
-        <div className="card-miro p-5 m-6 space-y-4 animate-in fade-in zoom-in-95 duration-200">
-          <p
-            className="text-sm font-medium text-[#1c1c1e]"
-            style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
-          >
-            New Flashcard
-          </p>
-          <form onSubmit={handleCreate} className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#555a6a]">Front</label>
-                <textarea
-                  autoFocus
-                  value={form.front}
-                  onChange={(e) => setForm((p) => ({ ...p, front: e.target.value }))}
-                  placeholder="Question or concept..."
-                  rows={4}
-                  className="input-miro w-full text-sm resize-none"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#555a6a]">Back</label>
-                <textarea
-                  value={form.back}
-                  onChange={(e) => setForm((p) => ({ ...p, back: e.target.value }))}
-                  placeholder="Answer or definition..."
-                  rows={4}
-                  className="input-miro w-full text-sm resize-none"
-                />
-              </div>
+      <Dialog
+        open={showForm}
+        onOpenChange={(open) => {
+          if (!open) closeForm()
+          else setShowForm(true)
+        }}
+        title="New flashcard"
+        description="Create a card for this deck and optionally link it to a document."
+        size="lg"
+      >
+        <form onSubmit={handleCreate} className="space-y-5">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <label htmlFor="card-front-input" className="text-xs font-medium text-[#555a6a]">Front</label>
+              <textarea
+                id="card-front-input"
+                autoFocus
+                value={form.front}
+                onChange={(e) => setForm((p) => ({ ...p, front: e.target.value }))}
+                placeholder="Question or concept..."
+                rows={4}
+                className="input-miro w-full text-sm resize-none"
+              />
             </div>
-
-            {documents.length > 0 && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#555a6a]">
-                  Link to document <span className="text-[#a5a8b5] font-normal">(optional)</span>
-                </label>
-                <select
-                  value={form.documentId}
-                  onChange={(e) => setForm((p) => ({ ...p, documentId: e.target.value }))}
-                  className="input-miro w-full text-sm appearance-none"
-                >
-                  <option value="">— None —</option>
-                  {documents.map((d) => (
-                    <option key={d.id} value={d.id}>{d.title}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {error && <p className="text-red-500 text-xs">{error}</p>}
-
-            <div className="flex gap-2 justify-end">
-              <button
-                type="button"
-                onClick={() => { setShowForm(false); setForm(EMPTY); setError(null) }}
-                className="btn-secondary text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={!form.front.trim() || !form.back.trim() || creating}
-                className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                Add Card
-              </button>
+            <div className="space-y-1.5">
+              <label htmlFor="card-back-input" className="text-xs font-medium text-[#555a6a]">Back</label>
+              <textarea
+                id="card-back-input"
+                value={form.back}
+                onChange={(e) => setForm((p) => ({ ...p, back: e.target.value }))}
+                placeholder="Answer or definition..."
+                rows={4}
+                className="input-miro w-full text-sm resize-none"
+              />
             </div>
-          </form>
-        </div>
-      )}
+          </div>
+
+          {documents.length > 0 && (
+            <div className="space-y-1.5">
+              <label htmlFor="card-document-select" className="text-xs font-medium text-[#555a6a]">
+                Link to document <span className="text-[#a5a8b5] font-normal">(optional)</span>
+              </label>
+              <select
+                id="card-document-select"
+                value={form.documentId}
+                onChange={(e) => setForm((p) => ({ ...p, documentId: e.target.value }))}
+                className="input-miro w-full text-sm appearance-none"
+              >
+                <option value="">— None —</option>
+                {documents.map((d) => (
+                  <option key={d.id} value={d.id}>{d.title}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {error && <p className="text-red-500 text-xs">{error}</p>}
+
+          <div className="flex gap-2 justify-end">
+            <button
+              type="button"
+              onClick={closeForm}
+              className="btn-secondary text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!form.front.trim() || !form.back.trim() || creating}
+              className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              Add Card
+            </button>
+          </div>
+        </form>
+      </Dialog>
 
       {/* Cards grid */}
       {cards.length === 0 ? (

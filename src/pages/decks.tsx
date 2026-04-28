@@ -1,17 +1,19 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { Folder } from "lucide-react"
+import { Folder, Loader2, Plus } from "lucide-react"
 import { useDecks } from "../hooks/use-decks"
 import { useDataRefresh } from "../hooks/use-data-refresh"
 import { deckService } from "../lib/container"
-import { PageHeader, EmptyState, LoadingState, CreateForm, PageContainer } from "../components/ui/page"
+import { PageHeader, EmptyState, LoadingState, PageContainer } from "../components/ui/page"
+import { Dialog } from "../components/ui/dialog"
 import { ListItem } from "../components/ui/list-item"
 import type { CreateDeckInput } from "../domain/models/deck"
 
 export function DecksPage() {
-  const { decks, loading, create, remove, reload } = useDecks()
+  const { decks, loading, create, reload } = useDecks()
   const navigate = useNavigate()
   const { refreshKey } = useDataRefresh()
+  const didMountRef = useRef(false)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: "", description: "" })
   const [creating, setCreating] = useState(false)
@@ -19,8 +21,12 @@ export function DecksPage() {
 
   // Reload data when refresh is triggered (e.g., after import)
   useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true
+      return
+    }
     reload()
-  }, [refreshKey])
+  }, [refreshKey, reload])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -46,10 +52,7 @@ export function DecksPage() {
   }
 
   function handleDelete(id: string) {
-    const deck = decks.find(d => d.id === id)
-    if (deck && confirm(`Delete "${deck.name}"? All cards in this deck will also be deleted.`)) {
-      deckService.delete(id).then(() => reload())
-    }
+    deckService.delete(id).then(() => reload())
   }
 
   const description = decks.length === 0
@@ -66,20 +69,22 @@ export function DecksPage() {
         buttonId="create-deck-btn"
       />
 
-      {showForm && (
-        <CreateForm
-          title="New deck"
-          onSubmit={handleCreate}
-          submitLabel="Create deck"
-          onCancel={handleCancel}
-          submitDisabled={!form.name.trim()}
-          loading={creating}
-          error={error}
-        >
+      <Dialog
+        open={showForm}
+        onOpenChange={(open) => {
+          if (!open) handleCancel()
+          else setShowForm(true)
+        }}
+        title="New deck"
+        description="Create a deck to organize related flashcards."
+        size="md"
+      >
+        <form onSubmit={handleCreate} className="space-y-5">
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[#555a6a]">Name</label>
+              <label htmlFor="deck-name-input" className="text-xs font-medium text-[#555a6a]">Name</label>
               <input
+                id="deck-name-input"
                 autoFocus
                 type="text"
                 placeholder="Deck name..."
@@ -89,8 +94,11 @@ export function DecksPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[#555a6a]">Description <span className="text-[#a5a8b5] font-normal">(optional)</span></label>
+              <label htmlFor="deck-description-input" className="text-xs font-medium text-[#555a6a]">
+                Description <span className="text-[#a5a8b5] font-normal">(optional)</span>
+              </label>
               <input
+                id="deck-description-input"
                 type="text"
                 placeholder="Deck description..."
                 value={form.description}
@@ -99,8 +107,24 @@ export function DecksPage() {
               />
             </div>
           </div>
-        </CreateForm>
-      )}
+
+          {error && <p className="text-red-500 text-xs">{error}</p>}
+
+          <div className="flex gap-2 justify-end">
+            <button type="button" onClick={handleCancel} className="btn-secondary text-sm">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!form.name.trim() || creating}
+              className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              Create deck
+            </button>
+          </div>
+        </form>
+      </Dialog>
 
       {loading ? (
         <LoadingState />
@@ -126,6 +150,7 @@ export function DecksPage() {
               subtitle={deck.description}
               onClick={() => navigate(`/dashboard/decks/${deck.id}`)}
               onDelete={() => handleDelete(deck.id)}
+              deleteConfirmMessage={`Delete "${deck.name}"? All cards in this deck will also be deleted.`}
               animationDelay={i * 50}
             />
           ))}

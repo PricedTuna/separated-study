@@ -1,17 +1,19 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { FileText, Clock } from "lucide-react"
+import { FileText, Clock, Loader2, Plus } from "lucide-react"
 import { useDocuments } from "../hooks/use-documents"
 import { useDataRefresh } from "../hooks/use-data-refresh"
 import { documentService } from "../lib/container"
 import type { CreateDocumentInput } from "../domain/models/document"
-import { PageHeader, EmptyState, LoadingState, CreateForm, PageContainer } from "../components/ui/page"
+import { PageHeader, EmptyState, LoadingState, PageContainer } from "../components/ui/page"
+import { Dialog } from "../components/ui/dialog"
 import { ListItem } from "../components/ui/list-item"
 
 export function DocumentsPage() {
-  const { documents, loading, create, reload, remove } = useDocuments()
+  const { documents, loading, create, reload } = useDocuments()
   const navigate = useNavigate()
   const { refreshKey } = useDataRefresh()
+  const didMountRef = useRef(false)
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState("")
   const [creating, setCreating] = useState(false)
@@ -19,8 +21,12 @@ export function DocumentsPage() {
 
   // Reload data when refresh is triggered (e.g., after import)
   useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true
+      return
+    }
     reload()
-  }, [refreshKey])
+  }, [refreshKey, reload])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -40,9 +46,13 @@ export function DocumentsPage() {
   }
 
   function handleDelete(id: string) {
-    if (confirm(`Delete "${documents.find(d => d.id === id)?.title}"?`)) {
-      documentService.delete(id).then(() => reload())
-    }
+    documentService.delete(id).then(() => reload())
+  }
+
+  function handleCancel() {
+    setShowForm(false)
+    setTitle("")
+    setError(null)
   }
 
   function formatDate(iso: string) {
@@ -67,17 +77,21 @@ export function DocumentsPage() {
         buttonId="create-document-btn"
       />
 
-      {showForm && (
-        <CreateForm
-          title="New document"
-          onSubmit={handleCreate}
-          submitLabel="Create"
-          onCancel={() => { setShowForm(false); setTitle(""); setError(null) }}
-          submitDisabled={!title.trim()}
-          loading={creating}
-          error={error}
-        >
-          <div className="flex gap-2">
+      <Dialog
+        open={showForm}
+        onOpenChange={(open) => {
+          if (!open) handleCancel()
+          else setShowForm(true)
+        }}
+        title="New document"
+        description="Create a document to organize notes and study material."
+        size="md"
+      >
+        <form onSubmit={handleCreate} className="space-y-5">
+          <div className="space-y-1.5">
+            <label htmlFor="document-title-input" className="text-xs font-medium text-[#555a6a]">
+              Title
+            </label>
             <input
               id="document-title-input"
               autoFocus
@@ -85,11 +99,27 @@ export function DocumentsPage() {
               placeholder="Document title..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="input-miro flex-1 text-sm"
+              className="input-miro w-full text-sm"
             />
           </div>
-        </CreateForm>
-      )}
+
+          {error && <p className="text-red-500 text-xs">{error}</p>}
+
+          <div className="flex gap-2 justify-end">
+            <button type="button" onClick={handleCancel} className="btn-secondary text-sm">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!title.trim() || creating}
+              className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              Create
+            </button>
+          </div>
+        </form>
+      </Dialog>
 
       {loading ? (
         <LoadingState />
@@ -121,6 +151,7 @@ export function DocumentsPage() {
               }
               onClick={() => navigate(`/dashboard/documents/${doc.id}`)}
               onDelete={() => handleDelete(doc.id)}
+              deleteConfirmMessage={`Delete "${doc.title}"?`}
               animationDelay={i * 50}
             />
           ))}

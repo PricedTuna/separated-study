@@ -78,54 +78,6 @@ export const LoadingState: FC = () => (
   </div>
 )
 
-interface CreateFormProps {
-  title: string
-  onSubmit: (e: React.FormEvent) => void
-  submitLabel: string
-  onCancel: () => void
-  submitDisabled?: boolean
-  loading?: boolean
-  error?: string | null
-  children: ReactNode
-}
-
-export const CreateForm: FC<CreateFormProps> = ({
-  title,
-  onSubmit,
-  submitLabel,
-  onCancel,
-  submitDisabled,
-  loading,
-  error,
-  children,
-}) => (
-  <div className="card-miro p-5 space-y-4 animate-in fade-in zoom-in-95 duration-200">
-    <p
-      className="text-sm font-medium text-[#1c1c1e]"
-      style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
-    >
-      {title}
-    </p>
-    <form onSubmit={onSubmit} className="space-y-3">
-      {children}
-      {error && <p className="text-red-500 text-xs">{error}</p>}
-      <div className="flex gap-2 justify-end">
-        <button type="button" onClick={onCancel} className="btn-secondary text-sm">
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={submitDisabled || loading}
-          className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-          {submitLabel}
-        </button>
-      </div>
-    </form>
-  </div>
-)
-
 interface PageContainerProps {
   children: ReactNode
 }

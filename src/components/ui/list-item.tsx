@@ -1,5 +1,6 @@
-import { type FC, type ReactNode } from "react"
+import { type FC, type KeyboardEvent, type ReactNode } from "react"
 import { ArrowRight, Trash2 } from "lucide-react"
+import { confirmDelete } from "../../lib/swal"
 
 interface ListItemProps {
   /** Main icon on the left (e.g., FileText, Folder) */
@@ -16,6 +17,8 @@ interface ListItemProps {
   onClick: () => void
   /** Click handler for delete button */
   onDelete?: () => void
+  /** Optional confirmation message shown before deleting */
+  deleteConfirmMessage?: string
   /** Delete button visibility */
   showDelete?: boolean
   /** Animation delay for staggered entrance */
@@ -32,14 +35,25 @@ export const ListItem: FC<ListItemProps> = ({
   subtitle,
   onClick,
   onDelete,
+  deleteConfirmMessage,
   showDelete = true,
   animationDelay = 0,
   id,
 }) => {
+  function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault()
+      onClick()
+    }
+  }
+
   return (
-    <button
+    <div
       id={id}
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={handleKeyDown}
       className="card-miro p-4 flex items-center gap-4 text-left hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 group animate-in fade-in slide-in-from-bottom-2 duration-300"
       style={{ animationDelay: `${animationDelay}ms` }}
     >
@@ -67,9 +81,15 @@ export const ListItem: FC<ListItemProps> = ({
       <div className="flex items-center gap-1">
         {showDelete && onDelete && (
           <button
-            onClick={(e) => {
+            onClick={async (e) => {
               e.stopPropagation()
-              onDelete()
+              const defaultMessage = `¿Eliminar "${title}"?`
+              const message = deleteConfirmMessage || defaultMessage
+              
+              const { isConfirmed } = await confirmDelete(title, message)
+              if (isConfirmed) {
+                onDelete()
+              }
             }}
             className="p-1.5 text-[#a5a8b5] hover:text-red-400 hover:bg-red-50 rounded-lg transition-colors"
             title="Delete"
@@ -79,6 +99,6 @@ export const ListItem: FC<ListItemProps> = ({
         )}
         <ArrowRight className="w-4 h-4 text-[#a5a8b5] group-hover:text-[#5b76fe] transition-colors" />
       </div>
-    </button>
+    </div>
   )
 }
