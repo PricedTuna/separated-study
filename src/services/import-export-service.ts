@@ -16,6 +16,7 @@ export async function importData(data: ExportData): Promise<ImportResult> {
         await documentService.create({
           title: doc.title,
           content: doc.content,
+          folderId: null,
         })
         result.documentsImported++
       } catch (e) {

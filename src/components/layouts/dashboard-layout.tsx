@@ -1,11 +1,12 @@
-import { useRef, useState } from "react"
+import { useRef, useState, useMemo } from "react"
 import { useNavigate, useLocation, Outlet } from "react-router-dom"
-import { Download, Upload, FileJson, Loader2 } from "lucide-react"
-import { Sidebar } from "../ui/sidebar"
+import { Download, Upload, FileJson, Loader2, Folder } from "lucide-react"
+import { Sidebar, type SidebarSection } from "../ui/sidebar"
 import { useDataRefresh } from "../../hooks/use-data-refresh"
+import { useFolders } from "../../hooks/use-folders"
 import { exportAllData, importData, downloadAsFile, parseImportFile, validateImportData } from "../../services/import-export-service"
 
-const sidebarItems = [
+const mainNavItems = [
   {
     id: "documents",
     label: "Documents",
@@ -32,17 +33,79 @@ export function DashboardLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const user = { name: "User" }
-  
+
   const [isExporting, setIsExporting] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [importResult, setImportResult] = useState<{ success: boolean; message: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { triggerRefresh } = useDataRefresh()
+  const { folders, reload: reloadFolders } = useFolders()
 
-  const activeItem =
-    sidebarItems.find((item) => location.pathname.startsWith(item.path))?.id ?? "documents"
+  // Only root folders (no parent)
+  const rootFolders = useMemo(() => {
+    return folders.filter(f => f.parentId === null)
+  }, [folders])
 
-  const activeLabel = sidebarItems.find((i) => i.id === activeItem)?.label ?? ""
+  // Determine active section based on path
+  const activeSection = useMemo(() => {
+    const path = location.pathname
+    if (path.startsWith("/dashboard/folders/")) {
+      return "documents"
+    }
+    if (path.startsWith("/dashboard/decks")) {
+      return "decks"
+    }
+    return "documents"
+  }, [location.pathname])
+
+  const activeLabel = mainNavItems.find((i) => i.id === activeSection)?.label ?? "Documents"
+
+  // Build sidebar sections
+  const sidebarSections = useMemo((): SidebarSection[] => {
+    const sections: SidebarSection[] = []
+
+    // Workspace section
+    sections.push({
+      title: "Workspace",
+      items: mainNavItems.map((item) => ({
+        ...item,
+        active: activeSection === item.id,
+      })),
+    })
+
+    // Documents section with folders
+    if (activeSection === "documents" || rootFolders.length > 0) {
+      const folderItems = rootFolders.map((folder) => ({
+        id: `folder-${folder.id}`,
+        label: folder.name,
+        path: `/dashboard/folders/${folder.id}`,
+        icon: <Folder className="w-4 h-4" />,
+      }))
+
+      sections.push({
+        title: "Folders",
+        items: folderItems,
+      })
+    }
+
+    return sections
+  }, [activeSection, rootFolders])
+
+  const handleSidebarItemClick = (id: string) => {
+    // Check main nav items first
+    const mainItem = mainNavItems.find((item) => item.id === id)
+    if (mainItem) {
+      navigate(mainItem.path)
+      return
+    }
+
+    // Check folders
+    if (id.startsWith("folder-")) {
+      const folderId = id.replace("folder-", "")
+      navigate(`/dashboard/folders/${folderId}`)
+      return
+    }
+  }
 
   const handleExport = async () => {
     setIsExporting(true)
@@ -71,7 +134,7 @@ export function DashboardLayout() {
     try {
       const content = await file.text()
       const { data, error: parseError } = parseImportFile(content)
-      
+
       if (parseError) {
         setImportResult({ success: false, message: parseError })
         setIsImporting(false)
@@ -86,40 +149,54 @@ export function DashboardLayout() {
       }
 
       const result = await importData(data)
-      
+
       if (result.errors.length > 0) {
-        setImportResult({ 
-          success: true, 
-          message: `Imported ${result.documentsImported} documents, ${result.decksImported} decks, ${result.cardsImported} cards. Some errors occurred: ${result.errors.join(", ")}` 
+        setImportResult({
+          success: true,
+          message: `Imported ${result.documentsImported} documents, ${result.decksImported} decks, ${result.cardsImported} cards. Some errors occurred: ${result.errors.join(", ")}`,
         })
         triggerRefresh()
+        reloadFolders()
       } else {
-        setImportResult({ 
-          success: true, 
-          message: `Successfully imported ${result.documentsImported} documents, ${result.decksImported} decks, and ${result.cardsImported} cards!` 
+        setImportResult({
+          success: true,
+          message: `Successfully imported ${result.documentsImported} documents, ${result.decksImported} decks, and ${result.cardsImported} cards!`,
         })
         triggerRefresh()
+        reloadFolders()
       }
     } catch (e) {
       setImportResult({ success: false, message: `Import failed: ${(e as Error).message}` })
     } finally {
       setIsImporting(false)
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
       }
     }
   }
 
+  // Determine active item for sidebar
+  const activeItem = useMemo(() => {
+    const path = location.pathname
+    if (path === "/dashboard/documents" || path.startsWith("/dashboard/documents/")) {
+      return "documents"
+    }
+    if (path.startsWith("/dashboard/folders/")) {
+      const folderId = path.split("/")[3]
+      return `folder-${folderId}`
+    }
+    if (path.startsWith("/dashboard/decks")) {
+      return "decks"
+    }
+    return "documents"
+  }, [location.pathname])
+
   return (
     <div className="min-h-screen flex bg-white">
       <Sidebar
-        items={sidebarItems}
+        sections={sidebarSections}
         activeItem={activeItem}
-        onItemClick={(id) => {
-          const item = sidebarItems.find((i) => i.id === id)
-          if (item) navigate(item.path)
-        }}
+        onItemClick={handleSidebarItemClick}
       />
 
       {/* Main content */}
@@ -142,7 +219,7 @@ export function DashboardLayout() {
               )}
               Export
             </button>
-            
+
             {/* Import button */}
             <button
               onClick={handleImportClick}
@@ -157,7 +234,7 @@ export function DashboardLayout() {
               )}
               Import
             </button>
-            
+
             <input
               ref={fileInputRef}
               type="file"
@@ -175,10 +252,10 @@ export function DashboardLayout() {
 
         {/* Import result toast */}
         {importResult && (
-          <div 
+          <div
             className={`mx-4 mt-2 px-4 py-3 rounded-lg text-sm ${
-              importResult.success 
-                ? "bg-green-50 text-green-700 border border-green-200" 
+              importResult.success
+                ? "bg-green-50 text-green-700 border border-green-200"
                 : "bg-red-50 text-red-700 border border-red-200"
             }`}
             onClick={() => setImportResult(null)}

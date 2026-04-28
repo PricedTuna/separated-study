@@ -57,6 +57,8 @@ function App() {
             <Route index element={<Navigate to="documents" replace />} />
             <Route path="documents" element={<DocumentsPage />} />
             <Route path="documents/:id" element={<DocumentDetailPage />} />
+            <Route path="folders/:folderId" element={<DocumentsPage />} />
+            <Route path="folders/:folderId/:id" element={<DocumentDetailPage />} />
             <Route path="decks" element={<DecksPage />} />
             <Route path="decks/:id" element={<DeckDetailPage />} />
             <Route path="overview" element={<DashboardPage />} />

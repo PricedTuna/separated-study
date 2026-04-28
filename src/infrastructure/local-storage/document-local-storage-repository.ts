@@ -1,6 +1,6 @@
 import { createLocalStorageAdapter } from "../../lib/storage/local-storage-adapter"
 import type { IDocumentRepository } from "../../domain/repositories/document-repository"
-import type { Document } from "../../domain/models/document"
+import type { Document, CreateDocumentInput, UpdateDocumentInput } from "../../domain/models/document"
 
 const adapter = createLocalStorageAdapter<Document>("spaced-study:documents")
 
@@ -13,12 +13,18 @@ export class DocumentLocalStorageRepository implements IDocumentRepository {
     return adapter.findById(id)
   }
 
-  async create(input: { title: string; content: string }) {
-    return adapter.create(input)
+  async create(input: CreateDocumentInput) {
+    return adapter.create({
+      ...input,
+      folderId: input.folderId ?? null,
+    })
   }
 
-  async update(id: string, input: { title?: string; content?: string }) {
-    return adapter.update(id, input)
+  async update(id: string, input: UpdateDocumentInput) {
+    return adapter.update(id, {
+      ...input,
+      folderId: input.folderId ?? undefined,
+    } as Document)
   }
 
   async delete(id: string) {

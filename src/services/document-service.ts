@@ -21,6 +21,7 @@ export class DocumentService {
     return this.repo.create({
       title: input.title.trim(),
       content: input.content,
+      folderId: input.folderId,
     })
   }
 
@@ -28,7 +29,10 @@ export class DocumentService {
     if (input.title !== undefined && !input.title.trim()) {
       throw new Error("El título no puede estar vacío")
     }
-    return this.repo.update(id, input)
+    return this.repo.update(id, {
+      ...input,
+      folderId: input.folderId,
+    })
   }
 
   delete(id: string): Promise<void> {

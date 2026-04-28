@@ -6,6 +6,7 @@ const adapter = createSupabaseAdapter<{
   id: string
   title: string
   content: string
+  folder_id: string | null
   created_at: string
   updated_at: string
 }>("documents")
@@ -14,6 +15,7 @@ function mapToDocument(row: {
   id: string
   title: string
   content: string
+  folder_id: string | null
   created_at: string
   updated_at: string
 }): Document {
@@ -21,6 +23,7 @@ function mapToDocument(row: {
     id: row.id,
     title: row.title,
     content: row.content,
+    folderId: row.folder_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -41,12 +44,16 @@ export class DocumentSupabaseRepository implements IDocumentRepository {
     const row = await adapter.create({
       title: input.title,
       content: input.content,
+      folder_id: input.folderId ?? null,
     })
     return mapToDocument(row as any)
   }
 
   async update(id: string, input: UpdateDocumentInput): Promise<Document> {
-    const row = await adapter.update(id, input as any)
+    const row = await adapter.update(id, {
+      ...input,
+      folder_id: input.folderId ?? null,
+    } as any)
     return mapToDocument(row as any)
   }
 

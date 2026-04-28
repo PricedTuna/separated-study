@@ -1,7 +1,7 @@
 import { type ReactNode } from "react"
 import { cn } from "../../lib/utils"
 
-interface SidebarItem {
+export interface SidebarItem {
   id: string
   label: string
   icon: ReactNode
@@ -9,8 +9,13 @@ interface SidebarItem {
   count?: number
 }
 
-interface SidebarProps {
+export interface SidebarSection {
+  title?: string
   items: SidebarItem[]
+}
+
+export interface SidebarProps {
+  sections?: SidebarSection[]
   activeItem?: string
   onItemClick?: (id: string) => void
   className?: string
@@ -18,11 +23,6 @@ interface SidebarProps {
 
 /**
  * SidebarItem - Individual navigation item with Notion/Miro style
- * Features:
- * - Hover state with subtle background
- * - Active state with accent color
- * - Smooth transitions
- * - Optional count badge
  */
 export function SidebarItem({
   item,
@@ -59,14 +59,45 @@ export function SidebarItem({
 }
 
 /**
- * Sidebar - Notion/Miro inspired sidebar
- * Features:
- * - Minimal header
- * - Animated item selection
- * - Hover states
- * - Ring shadow border
+ * SidebarSection - Collapsible section
  */
-export function Sidebar({ items, activeItem, onItemClick, className }: SidebarProps) {
+function SidebarSection({
+  section,
+  activeItem,
+  onItemClick,
+}: {
+  section: SidebarSection
+  activeItem?: string
+  onItemClick?: (id: string) => void
+}) {
+  return (
+    <div className="space-y-0.5">
+      {section.title && (
+        <div className="px-3 py-2 text-xs font-medium text-[#a5a8b5] uppercase tracking-wider">
+          {section.title}
+        </div>
+      )}
+      {section.items.map((item) => (
+        <SidebarItem
+          key={item.id}
+          item={item}
+          isActive={activeItem === item.id}
+          onClick={() => onItemClick?.(item.id)}
+        />
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Sidebar - Notion/Miro inspired sidebar with sections support
+ */
+export function Sidebar({
+  sections = [],
+  activeItem,
+  onItemClick,
+  className,
+}: SidebarProps) {
   return (
     <aside
       className={cn(
@@ -88,23 +119,20 @@ export function Sidebar({ items, activeItem, onItemClick, className }: SidebarPr
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-2 space-y-0.5">
-        <div className="px-3 py-2 text-xs font-medium text-[#a5a8b5] uppercase tracking-wider">
-          Workspace
-        </div>
-        {items.map((item, index) => (
+      <nav className="flex-1 p-2 overflow-y-auto">
+        {sections.map((section, sIndex) => (
           <div
-            key={item.id}
+            key={section.title || sIndex}
             className="animate-in"
             style={{
-              animationDelay: `${index * 50}ms`,
+              animationDelay: `${sIndex * 50}ms`,
               animationFillMode: "backwards",
             }}
           >
-            <SidebarItem
-              item={item}
-              isActive={activeItem === item.id}
-              onClick={() => onItemClick?.(item.id)}
+            <SidebarSection
+              section={section}
+              activeItem={activeItem}
+              onItemClick={onItemClick}
             />
           </div>
         ))}
