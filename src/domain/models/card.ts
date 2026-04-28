@@ -1,4 +1,4 @@
-export type CardResult = "remembered" | "forgot" | "unseen"
+export type CardResult = "again" | "hard" | "good" | "easy" | "unseen"
 
 export interface Card {
   id: string

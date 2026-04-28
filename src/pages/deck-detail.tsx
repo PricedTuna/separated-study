@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { ArrowLeft, Plus, Loader2, CreditCard, Check, X, Eye, Trash2 } from "lucide-react"
+import { ArrowLeft, Plus, Loader2, CreditCard, Check, X, Eye, Trash2, BrainCircuit } from "lucide-react"
 import { cardService, deckService, documentService } from "../lib/container"
 import { useDataRefresh } from "../hooks/use-data-refresh"
 import { confirmDelete } from "../lib/swal"
@@ -19,6 +19,7 @@ export function DeckDetailPage() {
   const { refreshKey } = useDataRefresh()
   const [deck, setDeck] = useState<Deck | null>(null)
   const [cards, setCards] = useState<Card[]>([])
+  const [dueCards, setDueCards] = useState<Card[]>([])
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -29,16 +30,17 @@ export function DeckDetailPage() {
   const [flipped, setFlipped] = useState<Record<string, boolean>>({})
 
   // Study mode state
-  const [studyIndex, setStudyIndex] = useState(0)
   const [studyMode, setStudyMode] = useState(false)
+  const [sessionTotal, setSessionTotal] = useState(0)
 
   const load = useCallback(async () => {
     if (!id) return
 
-    const [deckData, cardsData, docsData] = await Promise.all([
+    const [deckData, cardsData, docsData, studyData] = await Promise.all([
       deckService.getById(id),
       cardService.getByDeckId(id),
       documentService.getAll(),
+      cardService.getStudyCards(id),
     ])
 
     if (!deckData) {
@@ -48,6 +50,7 @@ export function DeckDetailPage() {
 
     setDeck(deckData)
     setCards(cardsData)
+    setDueCards(studyData)
     setDocuments(docsData)
     setLoading(false)
   }, [id, navigate])
@@ -79,8 +82,12 @@ export function DeckDetailPage() {
       })
       setForm(EMPTY)
       setShowForm(false)
-      const cardsData = await cardService.getByDeckId(id)
+      const [cardsData, studyData] = await Promise.all([
+        cardService.getByDeckId(id),
+        cardService.getStudyCards(id)
+      ])
       setCards(cardsData)
+      setDueCards(studyData)
     } catch (err) {
       setError((err as Error).message)
     } finally {
@@ -90,18 +97,17 @@ export function DeckDetailPage() {
 
   async function handleResult(cardId: string, result: CardResult) {
     await cardService.recordResult(cardId, result)
-    const cardsData = await cardService.getByDeckId(id!)
+    const [cardsData, studyData] = await Promise.all([
+      cardService.getByDeckId(id!),
+      cardService.getStudyCards(id!)
+    ])
     setCards(cardsData)
+    setDueCards(studyData)
     
-    // Move to next card in study mode
+    // In study mode, dueCards queue shrinks because answered cards get a future due date.
     if (studyMode) {
-      const nextIndex = studyIndex + 1
-      if (nextIndex < cardsData.length) {
-        // More cards to review - go to next
-        setStudyIndex(nextIndex)
-        setFlipped({})
-      } else {
-        // No more cards - exit study mode
+      setFlipped({})
+      if (studyData.length === 0) {
         setTimeout(() => exitStudy(), 500)
       }
     }
@@ -116,8 +122,12 @@ export function DeckDetailPage() {
     if (!isConfirmed) return
     
     await cardService.delete(cardId)
-    const cardsData = await cardService.getByDeckId(id!)
+    const [cardsData, studyData] = await Promise.all([
+      cardService.getByDeckId(id!),
+      cardService.getStudyCards(id!)
+    ])
     setCards(cardsData)
+    setDueCards(studyData)
   }
 
   function toggleFlip(cardId: string) {
@@ -126,13 +136,13 @@ export function DeckDetailPage() {
 
   const startStudy = () => {
     setStudyMode(true)
-    setStudyIndex(0)
+    setSessionTotal(dueCards.length)
     setFlipped({})
   }
 
   const exitStudy = () => {
     setStudyMode(false)
-    setStudyIndex(0)
+    setSessionTotal(0)
     setFlipped({})
   }
 
@@ -143,13 +153,17 @@ export function DeckDetailPage() {
   }
 
   const resultColor: Record<string, string> = {
-    remembered: "text-[#00b473]",
-    forgot: "text-red-400",
+    easy: "text-blue-500",
+    good: "text-green-500",
+    hard: "text-orange-500",
+    again: "text-red-500",
     unseen: "text-[#a5a8b5]",
   }
   const resultLabel: Record<string, string> = {
-    remembered: "Remembered",
-    forgot: "Forgot",
+    easy: "Easy",
+    good: "Good",
+    hard: "Hard",
+    again: "Again",
     unseen: "New",
   }
 
@@ -162,57 +176,73 @@ export function DeckDetailPage() {
   }
 
   // Study mode - big centered card like Anki
-  if (studyMode && cards.length > 0) {
-    const currentCard = cards[studyIndex]
+  if (studyMode && dueCards.length > 0) {
+    const currentCard = dueCards[0]
     const isFlipped = flipped[currentCard.id] ?? false
+    const progress = Math.min(sessionTotal, sessionTotal - dueCards.length + 1)
 
     return (
       <div className="min-h-screen bg-[#f5f5f5] flex flex-col">
         {/* Header */}
-        <div className="bg-white border-b border-[#e9eaef] px-6 py-4 flex items-center justify-between">
+        <div className="bg-white border-b border-[#e9eaef] px-6 py-4 flex items-center justify-between shadow-sm">
           <button onClick={exitStudy} className="btn-secondary flex items-center gap-1.5 text-sm">
             <ArrowLeft className="w-4 h-4" />
             Exit Study
           </button>
-          <div className="text-sm text-[#555a6a]">
-            {studyIndex + 1} / {cards.length}
+          <div className="text-sm font-medium text-[#555a6a] bg-[#f5f5f5] px-3 py-1 rounded-full">
+            {progress} / {sessionTotal}
           </div>
         </div>
 
         {/* Big Card */}
-        <div className="flex-1 flex items-center justify-center p-6">
+        <div className="flex-1 flex flex-col items-center justify-center p-6 pb-24">
           <div className="w-full max-w-2xl">
             <div
               onClick={() => toggleFlip(currentCard.id)}
-              className="bg-white rounded-2xl shadow-lg min-h-[400px] p-12 cursor-pointer transition-all duration-200 hover:shadow-xl flex flex-col items-center justify-center text-center"
+              className="bg-white rounded-3xl shadow-lg min-h-[450px] p-12 cursor-pointer transition-all duration-300 hover:shadow-xl flex flex-col items-center justify-center text-center relative border border-[#e9eaef]"
             >
-              <span className="text-xs font-medium uppercase tracking-wider text-[#a5a8b5] mb-4">
+              <div className="absolute top-6 left-6 text-xs font-semibold uppercase tracking-widest text-[#a5a8b5] flex items-center gap-2">
+                <BrainCircuit className="w-4 h-4" />
                 {isFlipped ? "Answer" : "Question"}
-              </span>
-              <p className="text-2xl text-[#1c1c1e] leading-relaxed">
+              </div>
+              <p className="text-3xl font-medium text-[#1c1c1e] leading-relaxed max-w-prose">
                 {isFlipped ? currentCard.back : currentCard.front}
               </p>
-              <p className="text-xs text-[#a5a8b5] mt-8">
+              <p className="text-sm font-medium text-[#a5a8b5] mt-12 animate-pulse">
                 Click to {isFlipped ? "see question" : "reveal answer"}
               </p>
             </div>
 
             {/* Answer buttons */}
             {isFlipped && (
-              <div className="flex justify-center gap-4 mt-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+              <div className="grid grid-cols-4 gap-3 mt-8 w-full animate-in fade-in slide-in-from-bottom-8 duration-300">
                 <button
-                  onClick={() => handleResult(currentCard.id, "forgot")}
-                  className="flex items-center gap-2 px-8 py-4 text-lg rounded-xl bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
+                  onClick={() => handleResult(currentCard.id, "again")}
+                  className="flex flex-col items-center justify-center gap-1 py-4 px-2 rounded-2xl bg-white hover:bg-red-50 text-red-600 transition-all shadow-sm border border-[#e9eaef] hover:border-red-200 hover:-translate-y-1"
                 >
-                  <X className="w-5 h-5" />
-                  Forgot
+                  <span className="font-bold text-base">Again</span>
+                  <span className="text-xs font-medium opacity-70">&lt; 10m</span>
                 </button>
                 <button
-                  onClick={() => handleResult(currentCard.id, "remembered")}
-                  className="flex items-center gap-2 px-8 py-4 text-lg rounded-xl bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
+                  onClick={() => handleResult(currentCard.id, "hard")}
+                  className="flex flex-col items-center justify-center gap-1 py-4 px-2 rounded-2xl bg-white hover:bg-orange-50 text-orange-600 transition-all shadow-sm border border-[#e9eaef] hover:border-orange-200 hover:-translate-y-1"
                 >
-                  <Check className="w-5 h-5" />
-                  Remembered
+                  <span className="font-bold text-base">Hard</span>
+                  <span className="text-xs font-medium opacity-70">Soon</span>
+                </button>
+                <button
+                  onClick={() => handleResult(currentCard.id, "good")}
+                  className="flex flex-col items-center justify-center gap-1 py-4 px-2 rounded-2xl bg-white hover:bg-green-50 text-green-600 transition-all shadow-sm border border-[#e9eaef] hover:border-green-200 hover:-translate-y-1"
+                >
+                  <span className="font-bold text-base">Good</span>
+                  <span className="text-xs font-medium opacity-70">Normal</span>
+                </button>
+                <button
+                  onClick={() => handleResult(currentCard.id, "easy")}
+                  className="flex flex-col items-center justify-center gap-1 py-4 px-2 rounded-2xl bg-white hover:bg-blue-50 text-blue-600 transition-all shadow-sm border border-[#e9eaef] hover:border-blue-200 hover:-translate-y-1"
+                >
+                  <span className="font-bold text-base">Easy</span>
+                  <span className="text-xs font-medium opacity-70">Later</span>
                 </button>
               </div>
             )}
@@ -232,13 +262,21 @@ export function DeckDetailPage() {
         <h1 className="flex-1 text-lg font-medium text-[#1c1c1e]">
           {deck?.name}
         </h1>
-        {cards.length > 0 && (
+        {dueCards.length > 0 ? (
           <button
             onClick={startStudy}
             className="btn-primary flex items-center gap-2 text-sm"
           >
-            <CreditCard className="w-4 h-4" />
-            Study ({cards.length})
+            <BrainCircuit className="w-4 h-4" />
+            Study ({dueCards.length} due)
+          </button>
+        ) : cards.length > 0 && (
+          <button
+            disabled
+            className="btn-secondary flex items-center gap-2 text-sm opacity-50 cursor-not-allowed"
+          >
+            <Check className="w-4 h-4" />
+            All caught up!
           </button>
         )}
         <button
@@ -331,7 +369,7 @@ export function DeckDetailPage() {
       {/* Cards grid */}
       {cards.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-[#ffd8f4] flex items-center justify-center">
+          <div className="w-16 h-16 rounded-2xl bg-[#ffd8f4] flex items-center justify-center shadow-sm">
             <CreditCard className="w-8 h-8 text-[#c050a0]" />
           </div>
           <div className="text-center">
@@ -347,61 +385,61 @@ export function DeckDetailPage() {
             return (
               <div
                 key={card.id}
-                className={`card-miro overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300 transition-all ${isFlipped ? 'ring-2 ring-[#5b76fe]' : ''}`}
-                style={{ animationDelay: `${i * 60}ms` }}
+                className={`card-miro overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300 transition-all ${isFlipped ? 'ring-2 ring-[#5b76fe] shadow-md' : 'hover:shadow-md'}`}
+                style={{ animationDelay: `${i * 40}ms` }}
               >
                 <div 
-                  className={`p-5 min-h-[120px] cursor-pointer relative transition-colors ${isFlipped ? 'bg-[#eef0ff]' : ''}`} 
+                  className={`p-5 min-h-[140px] cursor-pointer relative transition-colors ${isFlipped ? 'bg-[#eef0ff]' : ''}`} 
                   onClick={() => toggleFlip(card.id)}
                 >
-                  <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                    <span className={`text-[10px] font-medium uppercase tracking-wide ${resultColor[card.lastResult]}`}>
+                  <div className="absolute top-4 right-4 flex items-center gap-2">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/60 backdrop-blur-sm ${resultColor[card.lastResult]}`}>
                       {resultLabel[card.lastResult]}
                     </span>
-                    <Eye className="w-3.5 h-3.5 text-[#a5a8b5]" />
                   </div>
-                  <p className="text-[10px] font-medium uppercase tracking-wider text-[#a5a8b5] mb-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#a5a8b5] mb-3 flex items-center gap-1.5">
+                    <BrainCircuit className="w-3.5 h-3.5" />
                     {isFlipped ? "Answer" : "Question"}
                   </p>
-                  <p className="text-[#1c1c1e] text-[15px] leading-snug pr-16">
+                  <p className="text-[#1c1c1e] text-[16px] leading-relaxed pr-16 font-medium">
                     {isFlipped ? card.back : card.front}
                   </p>
                 </div>
 
-                <div className="border-t border-[#e9eaef] px-4 py-2.5 flex items-center gap-2">
+                <div className="border-t border-[#e9eaef] px-5 py-3 flex items-center gap-2 bg-white">
                   {isFlipped ? (
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         toggleFlip(card.id)
                       }}
-                      className="text-xs text-[#5b76fe] hover:bg-[#eef0ff] px-2 py-1 rounded-lg transition-colors flex items-center gap-1"
+                      className="text-xs font-medium text-[#5b76fe] hover:bg-[#eef0ff] px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
                     >
                       <Eye className="w-3.5 h-3.5" /> Show Question
                     </button>
                   ) : (
                     <button
                       onClick={() => toggleFlip(card.id)}
-                      className="text-xs text-[#5b76fe] hover:bg-[#eef0ff] px-2 py-1 rounded-lg transition-colors flex items-center gap-1"
+                      className="text-xs font-medium text-[#5b76fe] hover:bg-[#eef0ff] px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
                     >
                       <Eye className="w-3.5 h-3.5" /> Show Answer
                     </button>
                   )}
 
-                  <div className="ml-auto flex items-center gap-2">
+                  <div className="ml-auto flex items-center gap-3">
                     {linkedDoc && (
                       <button
                         onClick={() => navigate(`/dashboard/documents/${linkedDoc.id}`)}
-                        className="text-[10px] text-[#a5a8b5] hover:text-[#5b76fe] transition-colors truncate max-w-[120px]"
+                        className="text-[11px] font-medium text-[#888c9e] hover:text-[#5b76fe] transition-colors truncate max-w-[120px] flex items-center gap-1 bg-[#f5f5f5] px-2 py-1 rounded-md"
                       >
                         📄 {linkedDoc.title}
                       </button>
                     )}
                     <button
                       onClick={() => handleDelete(card.id)}
-                      className="text-[10px] text-[#a5a8b5] hover:text-red-400 transition-colors"
+                      className="text-[#a5a8b5] hover:text-red-500 hover:bg-red-50 p-1.5 rounded-md transition-colors"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -413,3 +451,4 @@ export function DeckDetailPage() {
     </div>
   )
 }
+

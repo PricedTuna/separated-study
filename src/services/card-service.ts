@@ -29,6 +29,22 @@ export class CardService {
     return this.cardRepo.findByDocumentId(documentId)
   }
 
+  async getStudyCards(deckId: string): Promise<Card[]> {
+    const cards = await this.cardRepo.findByDeckId(deckId)
+    const now = new Date().getTime()
+    
+    const cardsWithReviews = await Promise.all(
+      cards.map(async (card) => {
+        const review = await this.reviewRepo.findByCardId(card.id).catch(() => null)
+        return { card, review }
+      })
+    )
+
+    return cardsWithReviews
+      .filter(({ review }) => !review || new Date(review.due).getTime() <= now)
+      .map(({ card }) => card)
+  }
+
   create(input: CreateCardInput): Promise<Card> {
     if (!input.front.trim()) throw new Error("El frente de la card no puede estar vacío")
     if (!input.back.trim()) throw new Error("El reverso de la card no puede estar vacío")
