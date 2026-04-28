@@ -2,6 +2,7 @@ import { useRef, useState, useMemo } from "react"
 import { useNavigate, useLocation, Outlet } from "react-router-dom"
 import { Download, Upload, FileJson, Loader2, Folder } from "lucide-react"
 import { Sidebar, type SidebarSection } from "../ui/sidebar"
+import { Breadcrumb, type BreadcrumbItem } from "../ui/breadcrumb"
 import { useDataRefresh } from "../../hooks/use-data-refresh"
 import { useFolders } from "../../hooks/use-folders"
 import { exportAllData, importData, downloadAsFile, parseImportFile, validateImportData } from "../../services/import-export-service"
@@ -59,6 +60,37 @@ export function DashboardLayout() {
   }, [location.pathname])
 
   const activeLabel = mainNavItems.find((i) => i.id === activeSection)?.label ?? "Documents"
+
+  // Extract folder ID from URL if in a folder
+  const folderIdFromUrl = useMemo(() => {
+    const path = location.pathname
+    const match = path.match(/^\/dashboard\/folders\/([^/]+)/)
+    return match ? match[1] : null
+  }, [location.pathname])
+
+  // Build breadcrumb path for current folder (including all ancestors)
+  // Protected against infinite loops from circular parent references
+  const breadcrumbItems = useMemo((): BreadcrumbItem[] => {
+    if (!folderIdFromUrl) return []
+
+    const path: BreadcrumbItem[] = []
+    const visited = new Set<string>()
+    let currentId: string | null = folderIdFromUrl
+    const maxDepth = 20 // Prevent infinite loops
+
+    for (let i = 0; i < maxDepth && currentId; i++) {
+      if (visited.has(currentId)) break // Cycle detected
+      visited.add(currentId)
+
+      const folder = folders.find(f => f.id === currentId)
+      if (!folder) break
+
+      path.unshift({ id: folder.id, name: folder.name })
+      currentId = folder.parentId
+    }
+
+    return path
+  }, [folderIdFromUrl, folders])
 
   // Build sidebar sections
   const sidebarSections = useMemo((): SidebarSection[] => {
@@ -203,7 +235,11 @@ export function DashboardLayout() {
       <main className="flex-1 flex flex-col">
         {/* Top bar */}
         <header className="h-12 border-b border-[#e9eaef] bg-white flex items-center justify-between px-4">
-          <div className="text-sm text-[#555a6a]">{activeLabel}</div>
+          {breadcrumbItems.length > 0 ? (
+            <Breadcrumb items={breadcrumbItems} className="!mb-0" />
+          ) : (
+            <div className="text-sm text-[#555a6a]">{activeLabel}</div>
+          )}
           <div className="flex items-center gap-2">
             {/* Export button */}
             <button

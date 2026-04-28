@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react"
-import { useNavigate, useParams, Link } from "react-router-dom"
-import { Folder, FileText, Clock, Loader2, Plus, ChevronRight, ArrowLeft } from "lucide-react"
+import { useNavigate, useParams } from "react-router-dom"
+import { Folder, FileText, Clock, Loader2, Plus } from "lucide-react"
 import { useDocuments } from "../hooks/use-documents"
 import { useFolders } from "../hooks/use-folders"
 import { useDataRefresh } from "../hooks/use-data-refresh"
@@ -149,21 +149,6 @@ export function DocumentsPage() {
 
   return (
     <PageContainer>
-      {/* Breadcrumb */}
-      {!isRoot && currentFolder && (
-        <div className="flex items-center gap-1 mb-4">
-          <Link
-            to="/dashboard/documents"
-            className="flex items-center gap-1 text-xs text-[#555a6a] hover:text-[#1c1c1e] transition-colors"
-          >
-            <ArrowLeft className="w-3 h-3" />
-            Documents
-          </Link>
-          <ChevronRight className="w-3 h-3 text-[#a5a8b5]" />
-          <span className="text-xs font-medium text-[#1c1c1e]">{currentFolder.name}</span>
-        </div>
-      )}
-
       <PageHeader
         title={isRoot ? "Documents" : currentFolder?.name || "Folder"}
         description={description}
