@@ -92,15 +92,18 @@ export function DeckDetailPage() {
     await cardService.recordResult(cardId, result)
     const cardsData = await cardService.getByDeckId(id!)
     setCards(cardsData)
+    
     // Move to next card in study mode
-    if (studyMode && studyIndex < cardsData.length - 1) {
-      setStudyIndex((prev) => prev + 1)
-      // Reset flipped state for next card
-      const nextCard = cardsData[studyIndex + 1]
-      setFlipped({ [nextCard.id]: false })
-    } else if (studyMode) {
-      // Completed all cards
-      setTimeout(() => exitStudy(), 500)
+    if (studyMode) {
+      const nextIndex = studyIndex + 1
+      if (nextIndex < cardsData.length) {
+        // More cards to review - go to next
+        setStudyIndex(nextIndex)
+        setFlipped({})
+      } else {
+        // No more cards - exit study mode
+        setTimeout(() => exitStudy(), 500)
+      }
     }
   }
 
