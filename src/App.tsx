@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { useEffect, useState } from "react"
+import { LandingPage } from "./pages/landing"
 import { LoginPage } from "./pages/login"
 import { SignupPage } from "./pages/signup"
 import { DashboardLayout } from "./components/layouts/dashboard-layout"
@@ -43,7 +44,7 @@ function App() {
     <DataRefreshProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard/documents" replace />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route

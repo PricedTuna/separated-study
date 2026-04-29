@@ -424,3 +424,13 @@
 .swal2-progress-steps-miro .swal2-progress-step-line {
   background: #e9eaef !important;
 }
+
+/* 3D Animation Utilities */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}

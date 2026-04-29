@@ -1,6 +1,10 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { ArrowLeft, BrainCircuit, X, Check, Shuffle } from "lucide-react"
+import gsap from "gsap"
+import { useGSAP } from "@gsap/react"
 import type { Card, CardResult } from "../../domain/models/card"
+
+gsap.registerPlugin(useGSAP)
 
 interface StudySessionProps {
   initialCards: Card[]
@@ -14,6 +18,12 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
   const [currentIndex, setCurrentIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [sessionTotal, setSessionTotal] = useState(0)
+  const [isAnimating, setIsAnimating] = useState(false)
+
+  const cardRef = useRef<HTMLDivElement>(null)
+  const buttonsWrapperRef = useRef<HTMLDivElement>(null)
+  const buttonsRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   // Initialize cards when initialCards or mode changes
   useEffect(() => {
@@ -37,12 +47,10 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
     }
   }, [initialCards, mode])
 
-  // In SRS mode, cards length changes. In Free mode, index changes.
+  const activeCard = mode === "srs" ? cards[0] : cards[currentIndex]
   const progress = mode === "srs" 
     ? Math.min(sessionTotal, sessionTotal - cards.length + 1)
     : currentIndex + 1
-
-  const activeCard = mode === "srs" ? cards[0] : cards[currentIndex]
 
   // Exit when no cards to study (only after initialized)
   useEffect(() => {
@@ -51,19 +59,118 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
     }
   }, [activeCard, cards.length, sessionTotal, onExit])
 
-  const handleAction = async (result: CardResult) => {
-    if (mode === "srs") {
-      await onResult(activeCard.id, result)
-    } else {
-      // Free mode: just go to next card
-      const nextIndex = currentIndex + 1
-      if (nextIndex < cards.length) {
-        setCurrentIndex(nextIndex)
-        setFlipped(false)
-      } else {
-        setTimeout(() => onExit(), 500)
+  // Animations
+  useGSAP(() => {
+    if (!activeCard) return
+
+    // Minimalist entry animation for the card
+    gsap.fromTo(cardRef.current, 
+      { 
+        y: 15, 
+        opacity: 0,
+      },
+      { 
+        y: 0, 
+        opacity: 1, 
+        duration: 0.4, 
+        ease: "power2.out" 
       }
+    )
+  }, { dependencies: [activeCard?.id], scope: containerRef })
+
+  useGSAP(() => {
+    if (flipped && buttonsWrapperRef.current && buttonsRef.current) {
+      // Smoothly animate the wrapper height to prevent layout jump
+      gsap.fromTo(buttonsWrapperRef.current,
+        { height: 0 },
+        { 
+          height: "auto", 
+          duration: 0.4, 
+          ease: "power2.out" 
+        }
+      )
+
+      // Animate buttons from hidden state and slightly below
+      gsap.fromTo(buttonsRef.current.children, 
+        { 
+          y: 15, 
+          opacity: 0 
+        },
+        { 
+          y: 0, 
+          opacity: 1, 
+          stagger: 0.04,
+          duration: 0.35,
+          ease: "power2.out",
+          delay: 0.05
+        }
+      )
     }
+  }, { dependencies: [flipped], scope: containerRef })
+
+  const handleAction = async (result: CardResult) => {
+    if (isAnimating) return
+    setIsAnimating(true)
+
+    try {
+      const tl = gsap.timeline()
+
+      // Smooth exit: card moves down and buttons collapse
+      tl.to(cardRef.current, {
+        y: 15,
+        opacity: 0,
+        duration: 0.3,
+        ease: "power2.in"
+      })
+      
+      if (buttonsWrapperRef.current) {
+        tl.to(buttonsWrapperRef.current, {
+          height: 0,
+          opacity: 0,
+          duration: 0.3,
+          ease: "power2.in"
+        }, 0)
+      }
+
+      await tl.play()
+
+      if (mode === "srs") {
+        await onResult(activeCard.id, result)
+      } else {
+        const nextIndex = currentIndex + 1
+        if (nextIndex < cards.length) {
+          setCurrentIndex(nextIndex)
+          setFlipped(false)
+        } else {
+          onExit()
+        }
+      }
+    } catch (err) {
+      console.error("Study action failed:", err)
+    } finally {
+      setIsAnimating(false)
+    }
+  }
+
+  const toggleFlip = () => {
+    if (isAnimating) return
+    
+    // Minimalist flip: subtle scale and content fade
+    const tl = gsap.timeline()
+    tl.to(".card-content", {
+      opacity: 0,
+      scale: 0.98,
+      duration: 0.15,
+      ease: "power2.in",
+      onComplete: () => {
+        setFlipped(!flipped)
+      }
+    }).to(".card-content", {
+      opacity: 1,
+      scale: 1,
+      duration: 0.2,
+      ease: "power2.out"
+    })
   }
 
   if (!activeCard || cards.length === 0) {
@@ -71,7 +178,7 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5] flex flex-col fixed inset-0 z-50">
+    <div ref={containerRef} className="min-h-screen bg-[#f5f5f5] flex flex-col fixed inset-0 z-50">
       {/* Header */}
       <div className="bg-white border-b border-[#e9eaef] px-6 py-4 flex items-center justify-between shadow-sm">
         <button onClick={onExit} className="btn-secondary flex items-center gap-1.5 text-sm">
@@ -94,71 +201,90 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
       <div className="flex-1 flex flex-col items-center justify-center p-6 pb-24 overflow-y-auto">
         <div className="w-full max-w-2xl">
           <div
-            onClick={() => setFlipped(!flipped)}
-            className="bg-white rounded-3xl shadow-lg min-h-[450px] p-12 cursor-pointer transition-all duration-300 hover:shadow-xl flex flex-col items-center justify-center text-center relative border border-[#e9eaef]"
+            ref={cardRef}
+            onClick={toggleFlip}
+            className="bg-white rounded-[32px] shadow-xl min-h-[450px] p-12 cursor-pointer flex flex-col items-center justify-center text-center relative border border-[#e9eaef]"
           >
-            <div className="absolute top-6 left-6 text-xs font-semibold uppercase tracking-widest text-[#a5a8b5] flex items-center gap-2">
-              <BrainCircuit className="w-4 h-4" />
+            <div className="absolute top-8 left-8 text-xs font-bold uppercase tracking-[0.2em] text-[#a5a8b5] flex items-center gap-2">
+              <BrainCircuit className="w-4 h-4 text-[#5b76fe]" />
               {flipped ? "Answer" : "Question"}
             </div>
-            <p className="text-3xl font-medium text-[#1c1c1e] leading-relaxed max-w-prose">
-              {flipped ? activeCard.back : activeCard.front}
-            </p>
-            <p className="text-sm font-medium text-[#a5a8b5] mt-12 animate-pulse">
-              Click to {flipped ? "see question" : "reveal answer"}
-            </p>
+            
+            <div className="card-content w-full">
+              <p className="text-3xl font-semibold text-[#1c1c1e] leading-tight max-w-prose">
+                {flipped ? activeCard.back : activeCard.front}
+              </p>
+            </div>
+
+            <div className="absolute bottom-10 left-0 right-0 flex justify-center">
+              <p className="text-xs font-bold uppercase tracking-widest text-[#ccd0db]">
+                Click to {flipped ? "see question" : "reveal answer"}
+              </p>
+            </div>
           </div>
 
           {/* Answer buttons */}
-          {flipped && mode === "srs" && (
-            <div className="grid grid-cols-4 gap-3 mt-8 w-full animate-in fade-in slide-in-from-bottom-8 duration-300">
-              <button
-                onClick={() => handleAction("again")}
-                className="flex flex-col items-center justify-center gap-1 py-4 px-2 rounded-2xl bg-white hover:bg-red-50 text-red-600 transition-all shadow-sm border border-[#e9eaef] hover:border-red-200 hover:-translate-y-1"
-              >
-                <span className="font-bold text-base">Again</span>
-                <span className="text-xs font-medium opacity-70">&lt; 10m</span>
-              </button>
-              <button
-                onClick={() => handleAction("hard")}
-                className="flex flex-col items-center justify-center gap-1 py-4 px-2 rounded-2xl bg-white hover:bg-orange-50 text-orange-600 transition-all shadow-sm border border-[#e9eaef] hover:border-orange-200 hover:-translate-y-1"
-              >
-                <span className="font-bold text-base">Hard</span>
-                <span className="text-xs font-medium opacity-70">Soon</span>
-              </button>
-              <button
-                onClick={() => handleAction("good")}
-                className="flex flex-col items-center justify-center gap-1 py-4 px-2 rounded-2xl bg-white hover:bg-green-50 text-green-600 transition-all shadow-sm border border-[#e9eaef] hover:border-green-200 hover:-translate-y-1"
-              >
-                <span className="font-bold text-base">Good</span>
-                <span className="text-xs font-medium opacity-70">Normal</span>
-              </button>
-              <button
-                onClick={() => handleAction("easy")}
-                className="flex flex-col items-center justify-center gap-1 py-4 px-2 rounded-2xl bg-white hover:bg-blue-50 text-blue-600 transition-all shadow-sm border border-[#e9eaef] hover:border-blue-200 hover:-translate-y-1"
-              >
-                <span className="font-bold text-base">Easy</span>
-                <span className="text-xs font-medium opacity-70">Later</span>
-              </button>
-            </div>
-          )}
+          {flipped && (
+            <div ref={buttonsWrapperRef} className="w-full overflow-hidden">
+              <div className="pt-10">
+                {mode === "srs" && (
+                  <div ref={buttonsRef} className="grid grid-cols-4 gap-4 w-full">
+                    <button
+                      onClick={() => handleAction("again")}
+                      disabled={isAnimating}
+                      className="opacity-0 flex flex-col items-center justify-center gap-1.5 py-5 px-2 rounded-[24px] bg-white hover:bg-red-50 text-red-600 transition-colors shadow-sm border border-[#e9eaef] hover:border-red-200 active:scale-95 disabled:opacity-50"
+                    >
+                      <span className="font-bold text-lg">Again</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">10m</span>
+                    </button>
+                    <button
+                      onClick={() => handleAction("hard")}
+                      disabled={isAnimating}
+                      className="opacity-0 flex flex-col items-center justify-center gap-1.5 py-5 px-2 rounded-[24px] bg-white hover:bg-orange-50 text-orange-600 transition-colors shadow-sm border border-[#e9eaef] hover:border-orange-200 active:scale-95 disabled:opacity-50"
+                    >
+                      <span className="font-bold text-lg">Hard</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">2d</span>
+                    </button>
+                    <button
+                      onClick={() => handleAction("good")}
+                      disabled={isAnimating}
+                      className="opacity-0 flex flex-col items-center justify-center gap-1.5 py-5 px-2 rounded-[24px] bg-white hover:bg-green-50 text-green-600 transition-colors shadow-sm border border-[#e9eaef] hover:border-green-200 active:scale-95 disabled:opacity-50"
+                    >
+                      <span className="font-bold text-lg">Good</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">4d</span>
+                    </button>
+                    <button
+                      onClick={() => handleAction("easy")}
+                      disabled={isAnimating}
+                      className="opacity-0 flex flex-col items-center justify-center gap-1.5 py-5 px-2 rounded-[24px] bg-white hover:bg-blue-50 text-blue-600 transition-colors shadow-sm border border-[#e9eaef] hover:border-blue-200 active:scale-95 disabled:opacity-50"
+                    >
+                      <span className="font-bold text-lg">Easy</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">7d</span>
+                    </button>
+                  </div>
+                )}
 
-          {flipped && mode === "free" && (
-            <div className="grid grid-cols-2 gap-4 mt-8 w-full animate-in fade-in slide-in-from-bottom-8 duration-300">
-              <button
-                onClick={() => handleAction("again")}
-                className="flex items-center justify-center gap-2 py-4 px-4 rounded-2xl bg-white hover:bg-red-50 text-red-600 transition-all shadow-sm border border-[#e9eaef] hover:border-red-200 hover:-translate-y-1"
-              >
-                <X className="w-5 h-5" />
-                <span className="font-bold text-base">Needs work</span>
-              </button>
-              <button
-                onClick={() => handleAction("good")}
-                className="flex items-center justify-center gap-2 py-4 px-4 rounded-2xl bg-white hover:bg-green-50 text-green-600 transition-all shadow-sm border border-[#e9eaef] hover:border-green-200 hover:-translate-y-1"
-              >
-                <Check className="w-5 h-5" />
-                <span className="font-bold text-base">Got it</span>
-              </button>
+                {mode === "free" && (
+                  <div ref={buttonsRef} className="grid grid-cols-2 gap-4 w-full">
+                    <button
+                      onClick={() => handleAction("again")}
+                      disabled={isAnimating}
+                      className="opacity-0 flex items-center justify-center gap-3 py-5 px-4 rounded-[24px] bg-white hover:bg-red-50 text-red-600 transition-colors shadow-sm border border-[#e9eaef] hover:border-red-200 active:scale-95 disabled:opacity-50"
+                    >
+                      <X className="w-5 h-5 stroke-[3]" />
+                      <span className="font-bold text-lg">Needs work</span>
+                    </button>
+                    <button
+                      onClick={() => handleAction("good")}
+                      disabled={isAnimating}
+                      className="opacity-0 flex items-center justify-center gap-3 py-5 px-4 rounded-[24px] bg-white hover:bg-green-50 text-green-600 transition-colors shadow-sm border border-[#e9eaef] hover:border-green-200 active:scale-95 disabled:opacity-50"
+                    >
+                      <Check className="w-5 h-5 stroke-[3]" />
+                      <span className="font-bold text-lg">Got it</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
