@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { ArrowLeft, Plus, Loader2, CreditCard, Check, X, Eye, Trash2, BrainCircuit, CheckCircle2, RotateCcw } from "lucide-react"
+import { Plus, Loader2, CreditCard, Check, Eye, Trash2, BrainCircuit } from "lucide-react"
 import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
 
@@ -205,16 +205,16 @@ export function DeckDetailPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto animate-in fade-in duration-300">
+    <div className="mx-auto w-full max-w-5xl animate-in fade-in duration-300">
       {/* Header */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-[#e9eaef]">
+      <div className="flex flex-col gap-3 border-b border-[#e9eaef] px-4 py-4 sm:flex-row sm:items-center sm:px-6">
         <BackButton
           onClick={() => navigate("/dashboard/decks")}
         />
-        <h1 className="flex-1 text-lg font-medium text-[#1c1c1e]">
+        <h1 className="min-w-0 flex-1 truncate text-lg font-medium text-[#1c1c1e]">
           {deck?.name}
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {cards.length > 0 && (
             <button
               onClick={() => startStudy("free")}
@@ -340,7 +340,7 @@ export function DeckDetailPage() {
           </div>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 p-6">
+        <div className="grid gap-4 p-4 sm:p-6 md:grid-cols-2 md:gap-6">
           {cards.map((card, i) => {
             const isFlipped = flipped[card.id] ?? false
             const linkedDoc = documents.find((d) => d.id === card.documentId)
@@ -348,11 +348,11 @@ export function DeckDetailPage() {
               <div
                 key={card.id}
                 data-card-id={card.id}
-                className={`card-miro overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300 transition-all cursor-pointer ${isFlipped ? 'ring-2 ring-[#5b76fe] shadow-md bg-[#fcfdff]' : 'hover:shadow-md'}`}
+                className={`card-miro cursor-pointer overflow-hidden transition-all animate-in fade-in slide-in-from-bottom-2 duration-300 ${isFlipped ? 'ring-2 ring-[#5b76fe] shadow-md bg-[#fcfdff]' : 'hover:shadow-md'}`}
                 style={{ animationDelay: `${i * 40}ms` }}
                 onClick={() => toggleFlip(card.id)}
               >
-                <div className="card-inner p-5 min-h-[160px] flex flex-col">
+                <div className="card-inner flex min-h-[150px] flex-col p-4 sm:min-h-[160px] sm:p-5">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#a5a8b5] flex items-center gap-1.5">
                       <BrainCircuit className="w-3.5 h-3.5 text-[#5b76fe]" />

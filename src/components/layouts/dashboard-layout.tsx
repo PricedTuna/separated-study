@@ -1,6 +1,6 @@
 import { useRef, useState, useMemo } from "react"
 import { useNavigate, useLocation, Outlet } from "react-router-dom"
-import { Download, Upload, FileJson, Loader2, Folder, FileText } from "lucide-react"
+import { Download, Upload, FileJson, Loader2, Folder, FileText, Menu } from "lucide-react"
 import { Sidebar, type SidebarSection, type SidebarItem } from "../ui/sidebar"
 import { Breadcrumb, type BreadcrumbItem } from "../ui/breadcrumb"
 import { useDataRefresh } from "../../hooks/use-data-refresh"
@@ -39,6 +39,7 @@ export function DashboardLayout() {
   const [isExporting, setIsExporting] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [importResult, setImportResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { triggerRefresh } = useDataRefresh()
   const { folders, reload: reloadFolders } = useFolders()
@@ -89,60 +90,56 @@ export function DashboardLayout() {
     return path
   }, [folderIdFromUrl, folders])
 
-  // Build folder tree with nested children (folders + documents)
-  const buildFolderTree = (parentId: string | null): SidebarItem[] => {
-    // Get immediate child folders
-    const childFolders = folders
-      .filter(f => f.parentId === parentId)
-      .map(folder => ({
-        id: `folder-${folder.id}`,
-        label: folder.name,
-        icon: <Folder className="w-4 h-4" />,
-        children: buildFolderTree(folder.id),
-      }))
-
-    // Get documents in this folder (ALL levels, not just root)
-    const childDocs = documents
-      .filter(d => d.folderId === parentId)
-      .map(doc => ({
-        id: `doc-${doc.id}`,
-        label: doc.title,
-        icon: <FileText className="w-4 h-4" />,
-      }))
-
-    return [...childFolders, ...childDocs]
-  }
-
   // Build sidebar sections
   const sidebarSections = useMemo((): SidebarSection[] => {
-    const sections: SidebarSection[] = []
+    const buildFolderTree = (parentId: string | null): SidebarItem[] => {
+      const childFolders = folders
+        .filter(f => f.parentId === parentId)
+        .map(folder => ({
+          id: `folder-${folder.id}`,
+          label: folder.name,
+          icon: <Folder className="w-4 h-4" />,
+          children: buildFolderTree(folder.id),
+        }))
 
-    // Workspace section
-    sections.push({
-      title: "Workspace",
-      items: mainNavItems.map((item) => ({
-        ...item,
-        active: activeSection === item.id,
-      })),
-    })
+      const childDocs = documents
+        .filter(d => d.folderId === parentId)
+        .map(doc => ({
+          id: `doc-${doc.id}`,
+          label: doc.title,
+          icon: <FileText className="w-4 h-4" />,
+        }))
 
-    // Documents section with nested folders and documents
+      return [...childFolders, ...childDocs]
+    }
+
+    const sections: SidebarSection[] = [
+      {
+        title: "Workspace",
+        items: mainNavItems.map((item) => ({
+          ...item,
+          active: activeSection === item.id,
+        })),
+      },
+    ]
+
     const folderTree = buildFolderTree(null)
     if (folderTree.length > 0 || documents.some(d => d.folderId === null)) {
       sections.push({
-        title: "Documents",
+        title: "Library",
         items: folderTree,
       })
     }
 
     return sections
-  }, [folders, documents, activeSection, buildFolderTree, mainNavItems, activeSection])
+  }, [folders, documents, activeSection])
 
   const handleSidebarItemClick = (id: string) => {
     // Check Documents/Decks links
     const mainItem = mainNavItems.find((item) => item.id === id)
     if (mainItem) {
       navigate(mainItem.path)
+      setIsSidebarOpen(false)
       return
     }
 
@@ -150,6 +147,7 @@ export function DashboardLayout() {
     if (id.startsWith("folder-")) {
       const folderId = id.replace("folder-", "")
       navigate(`/dashboard/folders/${folderId}`)
+      setIsSidebarOpen(false)
       return
     }
 
@@ -157,6 +155,7 @@ export function DashboardLayout() {
     if (id.startsWith("doc-")) {
       const docId = id.replace("doc-", "")
       navigate(`/dashboard/documents/${docId}`)
+      setIsSidebarOpen(false)
       return
     }
   }
@@ -229,35 +228,60 @@ export function DashboardLayout() {
     }
   }
 
+  const activePath = [
+    activeSection,
+    ...breadcrumbItems.map(f => `folder-${f.id}`),
+    ...(location.pathname.includes("/documents/") || location.pathname.match(/\/folders\/[^/]+\/[^/]+$/)
+      ? [`doc-${location.pathname.split("/").pop()}`]
+      : [])
+  ].filter(id => id !== "doc-documents" && id !== "doc-decks")
+
   return (
-    <div className="min-h-screen flex bg-white">
-      <Sidebar
-        sections={sidebarSections}
-        onItemClick={handleSidebarItemClick}
-        activePath={[
-          activeSection,
-          ...breadcrumbItems.map(f => `folder-${f.id}`),
-          ...(location.pathname.includes("/documents/") || location.pathname.match(/\/folders\/[^/]+\/[^/]+$/)
-            ? [`doc-${location.pathname.split("/").pop()}`] 
-            : [])
-        ].filter(id => id !== "doc-documents" && id !== "doc-decks")}
-      />
+    <div className="min-h-screen bg-[#fbfbfd] lg:flex">
+      {isSidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          className="fixed inset-0 z-30 bg-[#1c1c1e]/35 backdrop-blur-sm lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      <div className={`fixed inset-y-0 left-0 z-40 w-72 transform transition-transform duration-200 ease-out lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <Sidebar
+          sections={sidebarSections}
+          onItemClick={handleSidebarItemClick}
+          activePath={activePath}
+        />
+      </div>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col">
+      <main className="flex min-h-screen min-w-0 flex-1 flex-col">
         {/* Top bar */}
-        <header className="h-12 border-b border-[#e9eaef] bg-white flex items-center justify-between px-4">
-          {breadcrumbItems.length > 0 ? (
-            <Breadcrumb items={breadcrumbItems} className="!mb-0" />
-          ) : (
-            <div className="text-sm text-[#555a6a]">{activeLabel}</div>
-          )}
-          <div className="flex items-center gap-2">
+        <header className="sticky top-0 z-20 flex min-h-14 items-center justify-between gap-3 border-b border-[#e9eaef] bg-white/90 px-3 backdrop-blur sm:px-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen(true)}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#555a6a] transition-colors hover:bg-[#f0f1f5] hover:text-[#1c1c1e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5b76fe] lg:hidden"
+              aria-label="Open sidebar"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            {breadcrumbItems.length > 0 ? (
+              <div className="min-w-0 overflow-hidden">
+                <Breadcrumb items={breadcrumbItems} className="!mb-0" />
+              </div>
+            ) : (
+              <div className="truncate text-sm font-medium text-[#555a6a]">{activeLabel}</div>
+            )}
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             {/* Export button */}
             <button
               onClick={handleExport}
               disabled={isExporting}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#555a6a] hover:text-[#1c1c1e] hover:bg-[#f0f1f5] rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs text-[#555a6a] transition-colors hover:bg-[#f0f1f5] hover:text-[#1c1c1e] disabled:opacity-50 sm:px-3"
               title="Export all data"
             >
               {isExporting ? (
@@ -265,14 +289,14 @@ export function DashboardLayout() {
               ) : (
                 <Download className="w-4 h-4" />
               )}
-              Export
+              <span className="hidden sm:inline">Export</span>
             </button>
 
             {/* Import button */}
             <button
               onClick={handleImportClick}
               disabled={isImporting}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#555a6a] hover:text-[#1c1c1e] hover:bg-[#f0f1f5] rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs text-[#555a6a] transition-colors hover:bg-[#f0f1f5] hover:text-[#1c1c1e] disabled:opacity-50 sm:px-3"
               title="Import data"
             >
               {isImporting ? (
@@ -280,7 +304,7 @@ export function DashboardLayout() {
               ) : (
                 <Upload className="w-4 h-4" />
               )}
-              Import
+              <span className="hidden sm:inline">Import</span>
             </button>
 
             <input
@@ -292,7 +316,7 @@ export function DashboardLayout() {
             />
 
             {/* User avatar */}
-            <button className="w-8 h-8 rounded-full bg-[#5b76fe] flex items-center justify-center text-white text-sm font-medium">
+            <button className="flex h-9 w-9 items-center justify-center rounded-full bg-[#5b76fe] text-sm font-medium text-white shadow-sm shadow-[#5b76fe]/25">
               {user.name[0]}
             </button>
           </div>
@@ -320,7 +344,7 @@ export function DashboardLayout() {
         )}
 
         {/* Content */}
-        <div className="flex-1 bg-white">
+        <div className="flex-1 bg-[#fbfbfd]">
           <Outlet />
         </div>
       </main>

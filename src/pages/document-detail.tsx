@@ -28,7 +28,10 @@ export function DocumentDetailPage() {
     setLoading(false)
   }, [id, navigate])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load()
+  }, [load])
 
   const handleSave = useCallback(async () => {
     if (!doc) return
@@ -72,9 +75,9 @@ export function DocumentDetailPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto animate-in fade-in duration-300">
+    <div className="mx-auto w-full max-w-5xl animate-in fade-in duration-300">
       {/* Toolbar */}
-      <div className="flex items-start gap-3 px-6 py-4">
+      <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:px-6">
         <BackButton
           onClick={() => navigate("/dashboard/documents")}
           aria-label="Go back to documents"
@@ -83,14 +86,14 @@ export function DocumentDetailPage() {
           id="document-title-edit"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="flex-1 text-lg font-medium bg-transparent border-b border-transparent focus:border-[#5b76fe] focus:outline-none pb-2 transition-colors"
+          className="min-w-0 flex-1 border-b border-transparent bg-transparent pb-2 text-lg font-medium transition-colors focus:border-[#5b76fe] focus:outline-none"
           placeholder="Title..."
         />
         <button
           id="save-document-btn"
           onClick={handleSave}
           disabled={saving}
-          className="btn-primary flex items-center gap-1.5 text-sm disabled:opacity-60"
+          className="btn-primary flex items-center justify-center gap-1.5 text-sm disabled:opacity-60 sm:justify-start"
         >
           {saving
             ? <Loader2 className="w-4 h-4 animate-spin" />
