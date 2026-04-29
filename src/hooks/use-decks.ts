@@ -5,18 +5,23 @@ import type { Deck, CreateDeckInput, UpdateDeckInput } from "../domain/models/de
 export function useDecks() {
   const [decks, setDecks] = useState<Deck[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const loadDecks = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const data = await deckService.getAll()
       setDecks(data)
+    } catch (err) {
+      setError((err as Error).message)
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadDecks()
   }, [loadDecks])
 
@@ -37,5 +42,5 @@ export function useDecks() {
     setDecks((prev) => prev.filter((d) => d.id !== id))
   }, [])
 
-  return { decks, loading, create, update, remove, reload: loadDecks }
+  return { decks, loading, error, create, update, remove, reload: loadDecks }
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { Folder, Loader2, Plus } from "lucide-react"
+import { BrainCircuit, Folder, Loader2, Plus, Search, AlertCircle, ArrowUpDown } from "lucide-react"
 import { useDecks } from "../hooks/use-decks"
 import { useDataRefresh } from "../hooks/use-data-refresh"
 import { deckService } from "../lib/container"
@@ -11,10 +11,12 @@ import { StudySession } from "../components/study/study-session"
 import type { CreateDeckInput } from "../domain/models/deck"
 import type { Card, CardResult } from "../domain/models/card"
 import { cardService } from "../lib/container"
-import { BrainCircuit } from "lucide-react"
+import type { Deck } from "../domain/models/deck"
+
+type DeckSort = "recent" | "name"
 
 export function DecksPage() {
-  const { decks, loading, create, reload } = useDecks()
+  const { decks, loading, error: decksError, create, reload } = useDecks()
   const navigate = useNavigate()
   const { refreshKey } = useDataRefresh()
   const didMountRef = useRef(false)
@@ -22,6 +24,9 @@ export function DecksPage() {
   const [form, setForm] = useState({ name: "", description: "" })
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [deletingDeckId, setDeletingDeckId] = useState<string | null>(null)
+  const [query, setQuery] = useState("")
+  const [sortBy, setSortBy] = useState<DeckSort>("recent")
 
   // Global study state
   const [globalCards, setGlobalCards] = useState<Card[]>([])
@@ -48,6 +53,7 @@ export function DecksPage() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadGlobalCards()
   }, [refreshKey])
 
@@ -77,11 +83,15 @@ export function DecksPage() {
     setError(null)
   }
 
-  function handleDelete(id: string) {
-    deckService.delete(id).then(() => {
+  async function handleDelete(id: string) {
+    setDeletingDeckId(id)
+    try {
+      await deckService.delete(id)
       reload()
-      loadGlobalCards()
-    })
+      await loadGlobalCards()
+    } finally {
+      setDeletingDeckId(null)
+    }
   }
 
   async function handleStudyResult(cardId: string, result: CardResult) {
@@ -98,6 +108,24 @@ export function DecksPage() {
   const description = decks.length === 0
     ? "No decks yet"
     : `${decks.length} deck${decks.length !== 1 ? "s" : ""}`
+
+  const cardCountByDeck = globalCards.reduce<Record<string, number>>((acc, card) => {
+    acc[card.deckId] = (acc[card.deckId] ?? 0) + 1
+    return acc
+  }, {})
+
+  const dueCountByDeck = globalDueCards.reduce<Record<string, number>>((acc, card) => {
+    acc[card.deckId] = (acc[card.deckId] ?? 0) + 1
+    return acc
+  }, {})
+
+  const normalizedQuery = query.trim().toLowerCase()
+  const visibleDecks = decks
+    .filter((deck) => matchesQuery(deck, normalizedQuery))
+    .sort((a, b) => {
+      if (sortBy === "name") return a.name.localeCompare(b.name)
+      return b.updatedAt.localeCompare(a.updatedAt)
+    })
 
   if (studyType) {
     return (
@@ -121,7 +149,9 @@ export function DecksPage() {
           buttonId="create-deck-btn"
         />
         {(globalCards.length > 0 || globalDueCards.length > 0) && (
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="card-miro p-3 sm:p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#888c9e] mb-2">Quick Study</p>
+            <div className="flex flex-wrap items-center gap-2">
             {globalCards.length > 0 && (
               <button
                 onClick={() => setStudyType("free")}
@@ -139,6 +169,7 @@ export function DecksPage() {
                 Global Study ({globalDueCards.length})
               </button>
             )}
+            </div>
           </div>
         )}
       </div>
@@ -203,6 +234,16 @@ export function DecksPage() {
 
       {loading ? (
         <LoadingState />
+      ) : decksError ? (
+        <EmptyState
+          icon={<AlertCircle className="w-8 h-8" />}
+          iconBgColor="bg-[#fff3f3]"
+          iconColor="text-[#d75252]"
+          title="We couldn't load your decks"
+          description={decksError}
+          buttonLabel="Retry"
+          onButtonClick={() => reload()}
+        />
       ) : decks.length === 0 ? (
         <EmptyState
           icon={<Folder className="w-8 h-8" />}
@@ -214,23 +255,76 @@ export function DecksPage() {
           onButtonClick={() => setShowForm(true)}
         />
       ) : (
-        <div className="grid gap-3">
-          {decks.map((deck, i) => (
+        <div className="space-y-3">
+          <div className="card-miro p-3 sm:p-4">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a5a8b5]" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  className="input-miro w-full pl-10! pr-3 py-2 text-sm"
+                  placeholder="Search decks..."
+                />
+              </div>
+              <button
+                onClick={() => setSortBy((prev) => (prev === "recent" ? "name" : "recent"))}
+                className="btn-secondary text-sm flex items-center gap-1.5 justify-center"
+              >
+                <ArrowUpDown className="w-4 h-4" />
+                Sort: {sortBy === "recent" ? "Recent" : "A-Z"}
+              </button>
+            </div>
+          </div>
+
+          {visibleDecks.length === 0 ? (
+            <EmptyState
+              icon={<Search className="w-8 h-8" />}
+              iconBgColor="bg-[#eef0ff]"
+              iconColor="text-[#5b76fe]"
+              title="No matching decks"
+              description="Try a different search or clear the filter."
+              buttonLabel="Clear search"
+              onButtonClick={() => setQuery("")}
+            />
+          ) : (
+            <div className="grid gap-3">
+          {visibleDecks.map((deck: Deck, i) => (
             <ListItem
               key={deck.id}
               icon={<Folder className="w-5 h-5" />}
               iconBgColor="bg-[#ffd8f4]"
               iconColor="text-[#c050a0]"
               title={deck.name}
-              subtitle={deck.description}
+              subtitle={
+                <div className="flex flex-wrap items-center gap-2">
+                  {deck.description && <span className="truncate max-w-[220px]">{deck.description}</span>}
+                  <span className="rounded-full bg-[#f5f5f7] px-2 py-0.5 text-[11px] text-[#555a6a]">
+                    {cardCountByDeck[deck.id] ?? 0} cards
+                  </span>
+                  <span className="rounded-full bg-[#eef0ff] px-2 py-0.5 text-[11px] text-[#4a5fef]">
+                    {dueCountByDeck[deck.id] ?? 0} due
+                  </span>
+                </div>
+              }
               onClick={() => navigate(`/dashboard/decks/${deck.id}`)}
               onDelete={() => handleDelete(deck.id)}
+              deleting={deletingDeckId === deck.id}
               deleteConfirmMessage={`Delete "${deck.name}"? All cards in this deck will also be deleted.`}
               animationDelay={i * 50}
             />
           ))}
+            </div>
+          )}
         </div>
       )}
     </PageContainer>
   )
+}
+
+function matchesQuery(deck: Deck, normalizedQuery: string) {
+  if (!normalizedQuery) return true
+  const name = deck.name.toLowerCase()
+  const description = deck.description?.toLowerCase() ?? ""
+  return name.includes(normalizedQuery) || description.includes(normalizedQuery)
 }

@@ -2,7 +2,6 @@ import type { ICardRepository } from "../domain/repositories/card-repository"
 import type { ICardReviewRepository } from "../domain/repositories/card-review-repository"
 import type { Card, CreateCardInput, UpdateCardInput, CardResult } from "../domain/models/card"
 import { DEFAULT_FSRS_PARAMS, calculateFSRS, toFSRSParams } from "../lib/fsrs"
-import type { CardReview } from "../domain/models/card-review"
 
 /**
  * CardService — lógica de negocio pura para las flashcards.
@@ -42,6 +41,11 @@ export class CardService {
 
     return cardsWithReviews
       .filter(({ review }) => !review || new Date(review.due).getTime() <= now)
+      .sort((a, b) => {
+        const dueA = a.review ? new Date(a.review.due).getTime() : 0
+        const dueB = b.review ? new Date(b.review.due).getTime() : 0
+        return dueA - dueB
+      })
       .map(({ card }) => card)
   }
 

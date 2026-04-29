@@ -87,6 +87,7 @@ export class CardSupabaseRepository implements ICardRepository {
       .select("*")
       .eq("deck_id", deckId)
       .eq("user_id", userId)
+      .order("updated_at", { ascending: false })
 
     if (error) throw error
     return (data as CardsRow[]).map(mapToCard)

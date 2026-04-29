@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Plus, Loader2, CreditCard, Check, Eye, Trash2, BrainCircuit } from "lucide-react"
+import { Plus, Loader2, CreditCard, Check, Eye, Trash2, BrainCircuit, Search, Pencil, LayoutGrid, List } from "lucide-react"
 import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
 
@@ -17,6 +17,9 @@ import { StudySession } from "../components/study/study-session"
 
 type FormState = { front: string; back: string; documentId: string }
 const EMPTY: FormState = { front: "", back: "", documentId: "" }
+type CardFilter = "all" | "due" | "new" | "learning"
+type CardSort = "recent" | "front"
+type CardsView = "grid" | "list"
 
 export function DeckDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -33,6 +36,11 @@ export function DeckDetailPage() {
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [flipped, setFlipped] = useState<Record<string, boolean>>({})
+  const [editingCardId, setEditingCardId] = useState<string | null>(null)
+  const [query, setQuery] = useState("")
+  const [filterBy, setFilterBy] = useState<CardFilter>("all")
+  const [sortBy, setSortBy] = useState<CardSort>("recent")
+  const [cardsView, setCardsView] = useState<CardsView>("grid")
 
   // Study mode state
   const [studyType, setStudyType] = useState<"srs" | "free" | null>(null)
@@ -78,12 +86,20 @@ export function DeckDetailPage() {
     setError(null)
     setCreating(true)
     try {
-      await cardService.create({
-        front: form.front,
-        back: form.back,
-        deckId: id,
-        documentId: form.documentId || null,
-      })
+      if (editingCardId) {
+        await cardService.update(editingCardId, {
+          front: form.front,
+          back: form.back,
+          documentId: form.documentId || null,
+        })
+      } else {
+        await cardService.create({
+          front: form.front,
+          back: form.back,
+          deckId: id,
+          documentId: form.documentId || null,
+        })
+      }
       setForm(EMPTY)
       setShowForm(false)
       const [cardsData, studyData] = await Promise.all([
@@ -165,11 +181,23 @@ export function DeckDetailPage() {
 
   const closeForm = () => {
     setShowForm(false)
+    setEditingCardId(null)
   }
 
   const handleExited = () => {
     setForm(EMPTY)
     setError(null)
+    setEditingCardId(null)
+  }
+
+  function openEditForm(card: Card) {
+    setEditingCardId(card.id)
+    setForm({
+      front: card.front,
+      back: card.back,
+      documentId: card.documentId ?? "",
+    })
+    setShowForm(true)
   }
 
   const resultColor: Record<string, string> = {
@@ -207,6 +235,23 @@ export function DeckDetailPage() {
     )
   }
 
+  const dueCardIds = new Set(dueCards.map((card) => card.id))
+  const normalizedQuery = query.trim().toLowerCase()
+  const visibleCards = cards
+    .filter((card) => {
+      if (normalizedQuery && !`${card.front} ${card.back}`.toLowerCase().includes(normalizedQuery)) {
+        return false
+      }
+      if (filterBy === "due") return dueCardIds.has(card.id)
+      if (filterBy === "new") return card.lastResult === "unseen"
+      if (filterBy === "learning") return card.lastResult === "again" || card.lastResult === "hard"
+      return true
+    })
+    .sort((a, b) => {
+      if (sortBy === "front") return a.front.localeCompare(b.front)
+      return b.updatedAt.localeCompare(a.updatedAt)
+    })
+
   return (
     <div className="mx-auto w-full max-w-5xl animate-in fade-in duration-300">
       {/* Header */}
@@ -232,31 +277,79 @@ export function DeckDetailPage() {
 
       {/* Action Row */}
       {cards.length > 0 && (
-        <div className="px-4 pt-4 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => startStudy("free")}
-              className="btn-secondary flex items-center gap-2 text-sm whitespace-nowrap"
-            >
-              Free Mode
-            </button>
-            {dueCards.length > 0 ? (
+        <div className="px-4 pt-4 sm:px-6 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="card-miro p-3 sm:p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#888c9e] mb-2">Study</p>
+            <div className="flex flex-wrap items-center gap-2">
               <button
-                onClick={() => startStudy("srs")}
-                className="btn-primary flex items-center gap-2 text-sm whitespace-nowrap"
+                onClick={() => startStudy("free")}
+                className="btn-secondary flex items-center gap-2 text-sm whitespace-nowrap"
               >
-                <BrainCircuit className="w-4 h-4 shrink-0" />
-                Study ({dueCards.length} due)
+                Free Mode
               </button>
-            ) : (
+              {dueCards.length > 0 ? (
+                <button
+                  onClick={() => startStudy("srs")}
+                  className="btn-primary flex items-center gap-2 text-sm whitespace-nowrap"
+                >
+                  <BrainCircuit className="w-4 h-4 shrink-0" />
+                  Study ({dueCards.length} due)
+                </button>
+              ) : (
+                <button
+                  disabled
+                  className="btn-secondary flex items-center gap-2 text-sm opacity-50 cursor-not-allowed whitespace-nowrap"
+                >
+                  <Check className="w-4 h-4 shrink-0" />
+                  All caught up!
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="card-miro p-3 sm:p-4 space-y-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a5a8b5]" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  className="input-miro w-full pl-10! py-2 text-sm"
+                  placeholder="Search cards..."
+                />
+              </div>
+              <div className="inline-flex rounded-lg border border-[#c7cad5] p-1 bg-white">
+                <button
+                  onClick={() => setCardsView("grid")}
+                  className={`rounded-md px-2 py-1 text-xs font-medium ${cardsView === "grid" ? "bg-[#eef0ff] text-[#4a5fef]" : "text-[#555a6a]"}`}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setCardsView("list")}
+                  className={`rounded-md px-2 py-1 text-xs font-medium ${cardsView === "list" ? "bg-[#eef0ff] text-[#4a5fef]" : "text-[#555a6a]"}`}
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {(["all", "due", "new", "learning"] as CardFilter[]).map((value) => (
+                <button
+                  key={value}
+                  onClick={() => setFilterBy(value)}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${filterBy === value ? "border-[#5b76fe] bg-[#eef0ff] text-[#4a5fef]" : "border-[#c7cad5] text-[#555a6a]"}`}
+                >
+                  {value === "all" ? "All" : value === "due" ? "Due" : value === "new" ? "New" : "Learning"}
+                </button>
+              ))}
               <button
-                disabled
-                className="btn-secondary flex items-center gap-2 text-sm opacity-50 cursor-not-allowed whitespace-nowrap"
+                onClick={() => setSortBy((prev) => (prev === "recent" ? "front" : "recent"))}
+                className="btn-secondary text-xs"
               >
-                <Check className="w-4 h-4 shrink-0" />
-                All caught up!
+                Sort: {sortBy === "recent" ? "Recent" : "A-Z"}
               </button>
-            )}
+            </div>
           </div>
         </div>
       )}
@@ -268,8 +361,8 @@ export function DeckDetailPage() {
           else setShowForm(true)
         }}
         onExited={handleExited}
-        title="New flashcard"
-        description="Create a card for this deck and optionally link it to a document."
+        title={editingCardId ? "Edit flashcard" : "New flashcard"}
+        description={editingCardId ? "Update this card." : "Create a card for this deck and optionally link it to a document."}
         size="lg"
       >
         <form onSubmit={handleCreate} className="space-y-5">
@@ -334,7 +427,7 @@ export function DeckDetailPage() {
               className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Add Card
+              {editingCardId ? "Save changes" : "Add Card"}
             </button>
           </div>
         </form>
@@ -351,16 +444,24 @@ export function DeckDetailPage() {
             <p className="text-[#555a6a] text-sm mt-1">Add your first flashcard to this deck</p>
           </div>
         </div>
+      ) : visibleCards.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-3">
+          <Search className="w-7 h-7 text-[#5b76fe]" />
+          <p className="text-[#1c1c1e] font-medium">No cards match the current filters</p>
+          <button className="btn-secondary text-sm" onClick={() => { setQuery(""); setFilterBy("all") }}>
+            Clear filters
+          </button>
+        </div>
       ) : (
-        <div className="grid gap-4 p-4 sm:p-6 md:grid-cols-2 md:gap-6">
-          {cards.map((card, i) => {
+        <div className={`${cardsView === "grid" ? "grid gap-4 p-4 sm:p-6 md:grid-cols-2 md:gap-6" : "p-4 sm:p-6 space-y-3"}`}>
+          {visibleCards.map((card, i) => {
             const isFlipped = flipped[card.id] ?? false
             const linkedDoc = documents.find((d) => d.id === card.documentId)
             return (
               <div
                 key={card.id}
                 data-card-id={card.id}
-                className={`card-miro cursor-pointer overflow-hidden transition-all animate-in fade-in slide-in-from-bottom-2 duration-300 ${isFlipped ? 'ring-2 ring-[#5b76fe] shadow-md bg-[#fcfdff]' : 'hover:shadow-md'}`}
+                className={`card-miro cursor-pointer overflow-hidden transition-all animate-in fade-in slide-in-from-bottom-2 duration-300 ${cardsView === "list" ? "w-full" : ""} ${isFlipped ? 'ring-2 ring-[#5b76fe] shadow-md bg-[#fcfdff]' : 'hover:shadow-md'}`}
                 style={{ animationDelay: `${i * 40}ms` }}
                 onClick={() => toggleFlip(card.id)}
               >
@@ -390,17 +491,28 @@ export function DeckDetailPage() {
                         📄 {linkedDoc.title}
                       </div>
                     )}
-                    {isFlipped && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openEditForm(card)
+                        }}
+                        className="text-[#a5a8b5] hover:text-[#5b76fe] hover:bg-[#eef0ff] p-1.5 rounded-full transition-colors"
+                        title="Edit card"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
                           handleDelete(card.id)
                         }}
                         className="text-[#a5a8b5] hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-colors"
+                        title="Delete card"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
-                    )}
+                    </div>
                   </div>
                 </div>
               </div>

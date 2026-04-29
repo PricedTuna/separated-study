@@ -14,7 +14,11 @@ export class CardLocalStorageRepository implements ICardRepository {
   }
 
   async findByDeckId(deckId: string) {
-    return adapter.findAll().then((cards) => cards.filter((c) => c.deckId === deckId))
+    return adapter.findAll().then((cards) =>
+      cards
+        .filter((c) => c.deckId === deckId)
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    )
   }
 
   async findByDocumentId(documentId: string) {

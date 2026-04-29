@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { ArrowLeft, BrainCircuit, X, Check, Shuffle } from "lucide-react"
+import { ArrowLeft, BrainCircuit, X, Check, Shuffle, RotateCcw, Keyboard } from "lucide-react"
 import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
 import type { Card, CardResult } from "../../domain/models/card"
@@ -12,6 +12,7 @@ interface StudySessionProps {
   onResult: (cardId: string, result: CardResult) => Promise<void>
   onExit: () => void
 }
+type ResultStatKey = Exclude<CardResult, "unseen">
 
 export function StudySession({ initialCards, mode, onResult, onExit }: StudySessionProps) {
   const [cards, setCards] = useState<Card[]>([])
@@ -19,6 +20,10 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
   const [flipped, setFlipped] = useState(false)
   const [sessionTotal, setSessionTotal] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
+  const [repeatIncorrect, setRepeatIncorrect] = useState(true)
+  const [requeuedCardIds, setRequeuedCardIds] = useState<Set<string>>(new Set())
+  const [sessionDone, setSessionDone] = useState(false)
+  const [stats, setStats] = useState<Record<ResultStatKey, number>>({ again: 0, hard: 0, good: 0, easy: 0 })
 
   const cardRef = useRef<HTMLDivElement>(null)
   const buttonsWrapperRef = useRef<HTMLDivElement>(null)
@@ -32,19 +37,20 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
       // Shuffle cards for free mode
       sessionCards = sessionCards.sort(() => Math.random() - 0.5)
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCards(sessionCards)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentIndex(0)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFlipped(false)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSessionTotal(sessionCards.length)
-  }, [initialCards, mode])
-
-  // Handle parent shrinking initialCards for SRS mode
-  useEffect(() => {
-    if (mode === "srs") {
-      setCards(initialCards)
-      setCurrentIndex(0)
-      setFlipped(false)
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRequeuedCardIds(new Set())
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSessionDone(false)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setStats({ again: 0, hard: 0, good: 0, easy: 0 })
   }, [initialCards, mode])
 
   const activeCard = mode === "srs" ? cards[0] : cards[currentIndex]
@@ -52,12 +58,6 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
     ? Math.min(sessionTotal, sessionTotal - cards.length + 1)
     : currentIndex + 1
 
-  // Exit when no cards to study (only after initialized)
-  useEffect(() => {
-    if (sessionTotal > 0 && (!activeCard || cards.length === 0)) {
-      onExit()
-    }
-  }, [activeCard, cards.length, sessionTotal, onExit])
 
   // Animations
   useGSAP(() => {
@@ -122,9 +122,13 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
     }
   }, { dependencies: [flipped], scope: containerRef })
 
-  const handleAction = async (result: CardResult) => {
+  async function handleAction(result: CardResult) {
+    if (!activeCard) return
     if (isAnimating) return
     setIsAnimating(true)
+    if (result !== "unseen") {
+      setStats((prev) => ({ ...prev, [result]: prev[result] + 1 }))
+    }
 
     try {
       // Smooth exit: card moves down
@@ -138,12 +142,17 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
       if (mode === "srs") {
         await onResult(activeCard.id, result)
       } else {
+        const shouldRequeue = repeatIncorrect && result === "again" && !requeuedCardIds.has(activeCard.id)
+        if (shouldRequeue) {
+          setCards((prev) => [...prev, activeCard])
+          setRequeuedCardIds((prev) => new Set(prev).add(activeCard.id))
+        }
         const nextIndex = currentIndex + 1
         if (nextIndex < cards.length) {
           setCurrentIndex(nextIndex)
           setFlipped(false)
         } else {
-          onExit()
+          setSessionDone(true)
         }
       }
     } catch (err) {
@@ -153,7 +162,7 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
     }
   }
 
-  const toggleFlip = () => {
+  function toggleFlip() {
     if (isAnimating) return
     
     // Minimalist flip: subtle scale and content fade
@@ -174,8 +183,35 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
     })
   }
 
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (sessionDone || isAnimating) return
+      if (event.key === " " || event.key === "Spacebar") {
+        event.preventDefault()
+        toggleFlip()
+        return
+      }
+      if (!flipped || !activeCard) return
+      if (mode === "srs") {
+        if (event.key === "1") void handleAction("again")
+        if (event.key === "2") void handleAction("hard")
+        if (event.key === "3") void handleAction("good")
+        if (event.key === "4") void handleAction("easy")
+        return
+      }
+      if (mode === "free") {
+        if (event.key === "1") void handleAction("again")
+        if (event.key === "2") void handleAction("good")
+      }
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [activeCard, flipped, isAnimating, mode, sessionDone])
+
+  const isCompleted = sessionDone || (mode === "srs" && sessionTotal > 0 && (!activeCard || cards.length === 0))
+
   if (!activeCard || cards.length === 0) {
-    return null
+    if (!sessionDone) return null
   }
 
   return (
@@ -195,12 +231,16 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
           <div className="text-sm font-medium text-[#555a6a] bg-[#f5f5f5] px-3 py-1.5 rounded-full">
             {progress} / {sessionTotal}
           </div>
+          <div className="text-xs font-medium text-[#888c9e] bg-[#f5f5f5] px-3 py-1.5 rounded-full flex items-center gap-1.5">
+            <Keyboard className="w-3.5 h-3.5" /> Space, 1-4
+          </div>
         </div>
       </div>
 
       {/* Big Card */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 pb-24 overflow-y-auto">
         <div className="w-full max-w-2xl">
+          {!isCompleted && activeCard && (
           <div
             ref={cardRef}
             onClick={toggleFlip}
@@ -223,6 +263,39 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
               </p>
             </div>
           </div>
+          )}
+
+          {isCompleted && (
+            <div className="card-miro rounded-[24px] p-8 text-center">
+              <p className="text-2xl font-semibold text-[#1c1c1e]">Session complete</p>
+              <p className="text-sm text-[#555a6a] mt-1">Review summary inspired by Quizlet flow.</p>
+              <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-xl bg-[#fff3f3] p-3 text-red-600 font-medium">Again: {stats.again}</div>
+                <div className="rounded-xl bg-[#fff7e8] p-3 text-orange-600 font-medium">Hard: {stats.hard}</div>
+                <div className="rounded-xl bg-[#edf9f3] p-3 text-green-600 font-medium">Good: {stats.good}</div>
+                <div className="rounded-xl bg-[#eef0ff] p-3 text-blue-600 font-medium">Easy: {stats.easy}</div>
+              </div>
+              <div className="mt-6 flex items-center justify-center gap-2">
+                {mode === "free" && stats.again > 0 && (
+                  <button
+                    onClick={() => {
+                      setSessionDone(false)
+                      setCurrentIndex(0)
+                      setFlipped(false)
+                      setCards([...initialCards])
+                      setSessionTotal(initialCards.length)
+                      setRequeuedCardIds(new Set())
+                      setStats({ again: 0, hard: 0, good: 0, easy: 0 })
+                    }}
+                    className="btn-secondary text-sm flex items-center gap-1.5"
+                  >
+                    <RotateCcw className="w-4 h-4" /> Restart
+                  </button>
+                )}
+                <button onClick={onExit} className="btn-primary text-sm">Exit</button>
+              </div>
+            </div>
+          )}
 
           {/* Answer buttons wrapper (always rendered for GSAP exit animations) */}
           <div 
@@ -239,7 +312,7 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
                       className="opacity-0 flex flex-col items-center justify-center gap-1.5 py-5 px-2 rounded-[24px] bg-white hover:bg-red-50 text-red-600 transition-colors shadow-sm border border-[#e9eaef] hover:border-red-200 active:scale-95 disabled:opacity-50"
                     >
                       <span className="font-bold text-lg">Again</span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">10m</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Soon</span>
                     </button>
                     <button
                       onClick={() => handleAction("hard")}
@@ -247,7 +320,7 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
                       className="opacity-0 flex flex-col items-center justify-center gap-1.5 py-5 px-2 rounded-[24px] bg-white hover:bg-orange-50 text-orange-600 transition-colors shadow-sm border border-[#e9eaef] hover:border-orange-200 active:scale-95 disabled:opacity-50"
                     >
                       <span className="font-bold text-lg">Hard</span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">2d</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Short</span>
                     </button>
                     <button
                       onClick={() => handleAction("good")}
@@ -255,7 +328,7 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
                       className="opacity-0 flex flex-col items-center justify-center gap-1.5 py-5 px-2 rounded-[24px] bg-white hover:bg-green-50 text-green-600 transition-colors shadow-sm border border-[#e9eaef] hover:border-green-200 active:scale-95 disabled:opacity-50"
                     >
                       <span className="font-bold text-lg">Good</span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">4d</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Normal</span>
                     </button>
                     <button
                       onClick={() => handleAction("easy")}
@@ -263,19 +336,28 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
                       className="opacity-0 flex flex-col items-center justify-center gap-1.5 py-5 px-2 rounded-[24px] bg-white hover:bg-blue-50 text-blue-600 transition-colors shadow-sm border border-[#e9eaef] hover:border-blue-200 active:scale-95 disabled:opacity-50"
                     >
                       <span className="font-bold text-lg">Easy</span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">7d</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Long</span>
                     </button>
                   </div>
                 )}
 
                 {mode === "free" && (
-                  <div ref={buttonsRef} className="grid grid-cols-2 gap-4 w-full">
+                  <div className="space-y-3">
+                    <label className="inline-flex items-center gap-2 text-xs text-[#555a6a]">
+                      <input
+                        type="checkbox"
+                        checked={repeatIncorrect}
+                        onChange={(e) => setRepeatIncorrect(e.target.checked)}
+                      />
+                      Repeat missed cards at the end
+                    </label>
+                    <div ref={buttonsRef} className="grid grid-cols-2 gap-4 w-full">
                     <button
                       onClick={() => handleAction("again")}
                       disabled={isAnimating}
                       className="opacity-0 flex items-center justify-center gap-3 py-5 px-4 rounded-[24px] bg-white hover:bg-red-50 text-red-600 transition-colors shadow-sm border border-[#e9eaef] hover:border-red-200 active:scale-95 disabled:opacity-50"
                     >
-                      <X className="w-5 h-5 stroke-[3]" />
+                      <X className="w-5 h-5 stroke-3" />
                       <span className="font-bold text-lg">Needs work</span>
                     </button>
                     <button
@@ -283,9 +365,10 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
                       disabled={isAnimating}
                       className="opacity-0 flex items-center justify-center gap-3 py-5 px-4 rounded-[24px] bg-white hover:bg-green-50 text-green-600 transition-colors shadow-sm border border-[#e9eaef] hover:border-green-200 active:scale-95 disabled:opacity-50"
                     >
-                      <Check className="w-5 h-5 stroke-[3]" />
+                      <Check className="w-5 h-5 stroke-3" />
                       <span className="font-bold text-lg">Got it</span>
                     </button>
+                    </div>
                   </div>
                 )}
               </div>

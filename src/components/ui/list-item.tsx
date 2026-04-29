@@ -25,6 +25,8 @@ interface ListItemProps {
   animationDelay?: number
   /** Unique ID for testing */
   id?: string
+  /** Loading state for destructive action */
+  deleting?: boolean
 }
 
 export const ListItem: FC<ListItemProps> = ({
@@ -39,8 +41,10 @@ export const ListItem: FC<ListItemProps> = ({
   showDelete = true,
   animationDelay = 0,
   id,
+  deleting = false,
 }) => {
   function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    if (deleting) return
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault()
       onClick()
@@ -52,9 +56,11 @@ export const ListItem: FC<ListItemProps> = ({
       id={id}
       role="button"
       tabIndex={0}
-      onClick={onClick}
+      onClick={() => {
+        if (!deleting) onClick()
+      }}
       onKeyDown={handleKeyDown}
-      className="card-miro p-4 flex items-center gap-4 text-left hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 group animate-in fade-in slide-in-from-bottom-2 duration-300"
+      className="card-miro p-4 flex items-center gap-4 text-left hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 group animate-in fade-in slide-in-from-bottom-2"
       style={{ animationDelay: `${animationDelay}ms` }}
     >
       {/* Icon */}
@@ -83,6 +89,7 @@ export const ListItem: FC<ListItemProps> = ({
           <button
             onClick={async (e) => {
               e.stopPropagation()
+              if (deleting) return
               const defaultMessage = `¿Eliminar "${title}"?`
               const message = deleteConfirmMessage || defaultMessage
               
@@ -91,10 +98,15 @@ export const ListItem: FC<ListItemProps> = ({
                 onDelete()
               }
             }}
+            disabled={deleting}
             className="p-1.5 text-[#a5a8b5] hover:text-red-400 hover:bg-red-50 rounded-lg transition-colors"
             title="Delete"
           >
-            <Trash2 className="w-4 h-4" />
+            {deleting ? (
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[#a5a8b5] border-t-transparent" />
+            ) : (
+              <Trash2 className="w-4 h-4" />
+            )}
           </button>
         )}
         <ArrowRight className="w-4 h-4 text-[#a5a8b5] group-hover:text-[#5b76fe] transition-colors" />
