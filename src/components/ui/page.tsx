@@ -8,6 +8,7 @@ interface PageHeaderProps {
   onButtonClick?: () => void
   buttonId?: string
   extraButtons?: ReactNode
+  backButton?: ReactNode
 }
 
 export const PageHeader: FC<PageHeaderProps> = ({
@@ -17,16 +18,20 @@ export const PageHeader: FC<PageHeaderProps> = ({
   onButtonClick,
   buttonId,
   extraButtons,
+  backButton,
 }) => (
   <div className="flex flex-row items-center justify-between gap-4">
-    <div className="min-w-0 flex-1">
-      <h1
-        className="text-[28px] font-medium text-[#1c1c1e] leading-[1.15] tracking-[-0.72px] truncate"
-        style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
-      >
-        {title}
-      </h1>
-      <p className="text-[#555a6a] text-sm mt-0.5 truncate">{description}</p>
+    <div className="flex items-center gap-3 min-w-0 flex-1">
+      {backButton}
+      <div className="min-w-0 flex-1">
+        <h1
+          className="text-[28px] font-medium text-[#1c1c1e] leading-[1.15] tracking-[-0.72px] truncate"
+          style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
+        >
+          {title}
+        </h1>
+        <p className="text-[#555a6a] text-sm mt-0.5 truncate">{description}</p>
+      </div>
     </div>
     <div className="flex flex-nowrap items-center gap-2 shrink-0">
       {extraButtons}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, type FC, type ReactNode } from "react"
+import { useEffect, useRef, useState, type FC, type ReactNode } from "react"
 import { createPortal } from "react-dom"
 import { gsap } from "gsap"
 import { useGSAP } from "@gsap/react"
@@ -17,6 +17,7 @@ interface DialogProps {
   footer?: ReactNode
   size?: DialogSize
   closeLabel?: string
+  onExited?: () => void
 }
 
 const sizeClasses: Record<DialogSize, string> = {
@@ -32,6 +33,7 @@ export const Dialog: FC<DialogProps> = ({
   description,
   children,
   footer,
+  onExited,
   size = "md",
   closeLabel = "Close",
 }) => {
@@ -42,6 +44,22 @@ export const Dialog: FC<DialogProps> = ({
   const bodyRef = useRef<HTMLDivElement | null>(null)
   const footerRef = useRef<HTMLDivElement | null>(null)
   const initializedRef = useRef(false)
+
+  // Internal state to keep content rendered during exit animation
+  const [shouldRenderContent, setShouldRenderContent] = useState(open)
+
+  useEffect(() => {
+    if (open) {
+      setShouldRenderContent(true)
+    } else {
+      // Delay unmounting until after animation
+      const timer = setTimeout(() => {
+        setShouldRenderContent(false)
+        onExited?.()
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [open, onExited])
 
   useGSAP(
     () => {
@@ -238,7 +256,7 @@ export const Dialog: FC<DialogProps> = ({
         </div>
 
         <div ref={bodyRef} className="px-6 py-5">
-          {children}
+          {shouldRenderContent && children}
         </div>
 
         {footer && (

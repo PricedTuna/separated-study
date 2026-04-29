@@ -14,6 +14,7 @@ import type { CreateFolderInput } from "../domain/models/folder"
 import { PageHeader, EmptyState, LoadingState, PageContainer } from "../components/ui/page"
 import { Dialog } from "../components/ui/dialog"
 import { ListItem } from "../components/ui/list-item"
+import { BackButton } from "../components/ui/back-button"
 
 export function DocumentsPage() {
   const { documents, loading: docsLoading, create: createDoc, reload: reloadDocs } = useDocuments()
@@ -172,6 +173,9 @@ export function DocumentsPage() {
   function handleCancel() {
     setShowDocForm(false)
     setShowFolderForm(false)
+  }
+
+  function handleExited() {
     setTitle("")
     setFolderName("")
     setError(null)
@@ -192,6 +196,19 @@ export function DocumentsPage() {
       <PageHeader
         title={isRoot ? "Documents" : currentFolder?.name || "Folder"}
         description={description}
+        backButton={
+          !isRoot ? (
+            <BackButton
+              onClick={() => {
+                if (currentFolder?.parentId) {
+                  navigate(`/dashboard/folders/${currentFolder.parentId}`)
+                } else {
+                  navigate("/dashboard/documents")
+                }
+              }}
+            />
+          ) : undefined
+        }
         extraButtons={
           <div className="relative" ref={dropdownRef}>
             <button
@@ -232,44 +249,43 @@ export function DocumentsPage() {
           if (!open) handleCancel()
           else setShowDocForm(true)
         }}
+        onExited={handleExited}
         title="New document"
         description="Create a document to organize notes and study material."
         size="md"
       >
-        {showDocForm && (
-          <form onSubmit={handleCreateDocument} className="space-y-5">
-            <div className="space-y-1.5">
-              <label htmlFor="document-title-input" className="text-xs font-medium text-[#555a6a]">
-                Title
-              </label>
-              <input
-                id="document-title-input"
-                autoFocus
-                type="text"
-                placeholder="Document title..."
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="input-miro w-full text-sm"
-              />
-            </div>
+        <form onSubmit={handleCreateDocument} className="space-y-5">
+          <div className="space-y-1.5">
+            <label htmlFor="document-title-input" className="text-xs font-medium text-[#555a6a]">
+              Title
+            </label>
+            <input
+              id="document-title-input"
+              autoFocus
+              type="text"
+              placeholder="Document title..."
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="input-miro w-full text-sm"
+            />
+          </div>
 
-            {error && <p className="text-red-500 text-xs">{error}</p>}
+          {error && <p className="text-red-500 text-xs">{error}</p>}
 
-            <div className="flex gap-2 justify-end">
-              <button type="button" onClick={handleCancel} className="btn-secondary text-sm">
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={!title.trim() || creating}
-                className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                Create
-              </button>
-            </div>
-          </form>
-        )}
+          <div className="flex gap-2 justify-end">
+            <button type="button" onClick={handleCancel} className="btn-secondary text-sm">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!title.trim() || creating}
+              className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              Create
+            </button>
+          </div>
+        </form>
       </Dialog>
 
       {/* New Folder Dialog */}
@@ -279,44 +295,43 @@ export function DocumentsPage() {
           if (!open) handleCancel()
           else setShowFolderForm(true)
         }}
+        onExited={handleExited}
         title="New folder"
         description="Create a folder to organize your documents."
         size="md"
       >
-        {showFolderForm && (
-          <form onSubmit={handleCreateFolder} className="space-y-5">
-            <div className="space-y-1.5">
-              <label htmlFor="folder-name-input" className="text-xs font-medium text-[#555a6a]">
-                Name
-              </label>
-              <input
-                id="folder-name-input"
-                autoFocus
-                type="text"
-                placeholder="Folder name..."
-                value={folderName}
-                onChange={(e) => setFolderName(e.target.value)}
-                className="input-miro w-full text-sm"
-              />
-            </div>
+        <form onSubmit={handleCreateFolder} className="space-y-5">
+          <div className="space-y-1.5">
+            <label htmlFor="folder-name-input" className="text-xs font-medium text-[#555a6a]">
+              Name
+            </label>
+            <input
+              id="folder-name-input"
+              autoFocus
+              type="text"
+              placeholder="Folder name..."
+              value={folderName}
+              onChange={(e) => setFolderName(e.target.value)}
+              className="input-miro w-full text-sm"
+            />
+          </div>
 
-            {error && <p className="text-red-500 text-xs">{error}</p>}
+          {error && <p className="text-red-500 text-xs">{error}</p>}
 
-            <div className="flex gap-2 justify-end">
-              <button type="button" onClick={handleCancel} className="btn-secondary text-sm">
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={!folderName.trim() || creating}
-                className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                Create folder
-              </button>
-            </div>
-          </form>
-        )}
+          <div className="flex gap-2 justify-end">
+            <button type="button" onClick={handleCancel} className="btn-secondary text-sm">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!folderName.trim() || creating}
+              className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              Create folder
+            </button>
+          </div>
+        </form>
       </Dialog>
 
       {loading ? (

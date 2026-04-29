@@ -92,29 +92,49 @@ export function Breadcrumb({
   const displayItems = animatedItems
 
   return (
-    <div ref={containerRef} className={cn("breadcrumb-container flex items-center gap-1 mb-4 flex-wrap", className)}>
+    <div ref={containerRef} className={cn("breadcrumb-container flex items-center gap-1 mb-4 flex-wrap min-w-0", className)}>
       <Link
         to={rootPath}
-        className="breadcrumb-root flex items-center gap-1 text-xs text-[#555a6a] hover:text-[#1c1c1e] transition-colors"
+        className="breadcrumb-root flex items-center gap-1 text-xs text-[#555a6a] hover:text-[#1c1c1e] transition-colors shrink-0"
       >
         <ArrowLeft className="w-3 h-3" />
         {rootLabel}
       </Link>
-      {displayItems.map((item, idx) => (
-        <div key={item.id} className="breadcrumb-item flex items-center gap-1">
+      
+      {/* Mobile ellipsis: shown only on mobile when there are more than 1 items */}
+      {displayItems.length > 1 && (
+        <div className="breadcrumb-item flex items-center gap-1 sm:hidden shrink-0">
           <ChevronRight className="w-3 h-3 text-[#a5a8b5]" />
-          {idx === displayItems.length - 1 ? (
-            <span className="text-xs font-medium text-[#1c1c1e]">{item.name}</span>
-          ) : (
-            <Link
-              to={`/dashboard/folders/${item.id}`}
-              className="text-xs text-[#555a6a] hover:text-[#1c1c1e] transition-colors"
-            >
-              {item.name}
-            </Link>
-          )}
+          <span className="text-xs text-[#555a6a]">...</span>
         </div>
-      ))}
+      )}
+
+      {displayItems.map((item, idx) => {
+        const isLast = idx === displayItems.length - 1
+        return (
+          <div 
+            key={item.id} 
+            className={cn(
+              "breadcrumb-item flex items-center gap-1 min-w-0",
+              !isLast && "hidden sm:flex"
+            )}
+          >
+            <ChevronRight className="w-3 h-3 text-[#a5a8b5] shrink-0" />
+            {isLast ? (
+              <span className="text-xs font-medium text-[#1c1c1e] truncate max-w-[120px] sm:max-w-none">
+                {item.name}
+              </span>
+            ) : (
+              <Link
+                to={`/dashboard/folders/${item.id}`}
+                className="text-xs text-[#555a6a] hover:text-[#1c1c1e] transition-colors truncate"
+              >
+                {item.name}
+              </Link>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }

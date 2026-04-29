@@ -70,6 +70,9 @@ export function DecksPage() {
 
   function handleCancel() {
     setShowForm(false)
+  }
+
+  function handleExited() {
     setForm({ name: "", description: "" })
     setError(null)
   }
@@ -146,57 +149,56 @@ export function DecksPage() {
           if (!open) handleCancel()
           else setShowForm(true)
         }}
+        onExited={handleExited}
         title="New deck"
         description="Create a deck to organize related flashcards."
         size="md"
       >
-        {showForm && (
-          <form onSubmit={handleCreate} className="space-y-5">
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <label htmlFor="deck-name-input" className="text-xs font-medium text-[#555a6a]">Name</label>
-                <input
-                  id="deck-name-input"
-                  autoFocus
-                  type="text"
-                  placeholder="Deck name..."
-                  value={form.name}
-                  onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                  className="input-miro w-full text-sm"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label htmlFor="deck-description-input" className="text-xs font-medium text-[#555a6a]">
-                  Description <span className="text-[#a5a8b5] font-normal">(optional)</span>
-                </label>
-                <input
-                  id="deck-description-input"
-                  type="text"
-                  placeholder="Deck description..."
-                  value={form.description}
-                  onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-                  className="input-miro w-full text-sm"
-                />
-              </div>
+        <form onSubmit={handleCreate} className="space-y-5">
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <label htmlFor="deck-name-input" className="text-xs font-medium text-[#555a6a]">Name</label>
+              <input
+                id="deck-name-input"
+                autoFocus
+                type="text"
+                placeholder="Deck name..."
+                value={form.name}
+                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                className="input-miro w-full text-sm"
+              />
             </div>
-
-            {error && <p className="text-red-500 text-xs">{error}</p>}
-
-            <div className="flex gap-2 justify-end">
-              <button type="button" onClick={handleCancel} className="btn-secondary text-sm">
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={!form.name.trim() || creating}
-                className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                Create deck
-              </button>
+            <div className="space-y-1.5">
+              <label htmlFor="deck-description-input" className="text-xs font-medium text-[#555a6a]">
+                Description <span className="text-[#a5a8b5] font-normal">(optional)</span>
+              </label>
+              <input
+                id="deck-description-input"
+                type="text"
+                placeholder="Deck description..."
+                value={form.description}
+                onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                className="input-miro w-full text-sm"
+              />
             </div>
-          </form>
-        )}
+          </div>
+
+          {error && <p className="text-red-500 text-xs">{error}</p>}
+
+          <div className="flex gap-2 justify-end">
+            <button type="button" onClick={handleCancel} className="btn-secondary text-sm">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!form.name.trim() || creating}
+              className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              Create deck
+            </button>
+          </div>
+        </form>
       </Dialog>
 
       {loading ? (
