@@ -135,7 +135,7 @@ export function Sidebar({
   activePath = [],
 }: SidebarProps) {
   return (
-    <aside className={`w-56 bg-white flex flex-col shrink-0 border-r border-[#e9eaef] ${className ?? ""}`}>
+    <aside className={`w-full h-full bg-white flex flex-col shrink-0 border-r border-[#e9eaef] ${className ?? ""}`}>
       <div className="p-3 border-b border-[#e9eaef]">
         <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer">
           <div className="w-6 h-6 rounded bg-[#5b76fe] flex items-center justify-center">

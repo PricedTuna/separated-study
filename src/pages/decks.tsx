@@ -109,18 +109,20 @@ export function DecksPage() {
 
   return (
     <PageContainer>
-      <PageHeader
-        title="Decks"
-        description={description}
-        buttonLabel="New deck"
-        onButtonClick={() => setShowForm(true)}
-        buttonId="create-deck-btn"
-        extraButtons={
-          <>
+      <div className="space-y-4">
+        <PageHeader
+          title="Decks"
+          description={description}
+          buttonLabel="New deck"
+          onButtonClick={() => setShowForm(true)}
+          buttonId="create-deck-btn"
+        />
+        {(globalCards.length > 0 || globalDueCards.length > 0) && (
+          <div className="flex flex-wrap items-center gap-2">
             {globalCards.length > 0 && (
               <button
                 onClick={() => setStudyType("free")}
-                className="btn-secondary flex items-center gap-2 text-sm"
+                className="btn-secondary flex items-center gap-2 text-sm whitespace-nowrap"
               >
                 Free Mode
               </button>
@@ -128,15 +130,15 @@ export function DecksPage() {
             {globalDueCards.length > 0 && (
               <button
                 onClick={() => setStudyType("srs")}
-                className="btn-primary flex items-center gap-2 text-sm"
+                className="btn-primary flex items-center gap-2 text-sm whitespace-nowrap"
               >
-                <BrainCircuit className="w-4 h-4" />
+                <BrainCircuit className="w-4 h-4 shrink-0" />
                 Global Study ({globalDueCards.length})
               </button>
             )}
-          </>
-        }
-      />
+          </div>
+        )}
+      </div>
 
       <Dialog
         open={showForm}

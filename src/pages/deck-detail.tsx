@@ -207,13 +207,15 @@ export function DeckDetailPage() {
   return (
     <div className="mx-auto w-full max-w-5xl animate-in fade-in duration-300">
       {/* Header */}
-      <div className="flex flex-col gap-3 border-b border-[#e9eaef] px-4 py-4 sm:flex-row sm:items-center sm:px-6">
-        <BackButton
-          onClick={() => navigate("/dashboard/decks")}
-        />
-        <h1 className="min-w-0 flex-1 truncate text-lg font-medium text-[#1c1c1e]">
-          {deck?.name}
-        </h1>
+      <div className="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-[#e9eaef] px-4 py-4 sm:px-6">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <BackButton
+            onClick={() => navigate("/dashboard/decks")}
+          />
+          <h1 className="min-w-0 truncate text-lg font-medium text-[#1c1c1e]">
+            {deck?.name}
+          </h1>
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           {cards.length > 0 && (
             <button

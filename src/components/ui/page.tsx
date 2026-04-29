@@ -4,8 +4,8 @@ import { Plus, Loader2 } from "lucide-react"
 interface PageHeaderProps {
   title: string
   description: string
-  buttonLabel: string
-  onButtonClick: () => void
+  buttonLabel?: string
+  onButtonClick?: () => void
   buttonId?: string
   extraButtons?: ReactNode
 }
@@ -18,22 +18,24 @@ export const PageHeader: FC<PageHeaderProps> = ({
   buttonId,
   extraButtons,
 }) => (
-  <div className="flex items-center justify-between">
-    <div>
+  <div className="flex flex-row items-center justify-between gap-4">
+    <div className="min-w-0 flex-1">
       <h1
-        className="text-[28px] font-medium text-[#1c1c1e] leading-[1.15] tracking-[-0.72px]"
+        className="text-[28px] font-medium text-[#1c1c1e] leading-[1.15] tracking-[-0.72px] truncate"
         style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
       >
         {title}
       </h1>
-      <p className="text-[#555a6a] text-sm mt-0.5">{description}</p>
+      <p className="text-[#555a6a] text-sm mt-0.5 truncate">{description}</p>
     </div>
-    <div className="flex items-center gap-2">
+    <div className="flex flex-nowrap items-center gap-2 shrink-0">
       {extraButtons}
-      <button id={buttonId} onClick={onButtonClick} className="btn-primary flex items-center gap-2 text-sm">
-        <Plus className="w-4 h-4" />
-        {buttonLabel}
-      </button>
+      {buttonLabel && onButtonClick && (
+        <button id={buttonId} onClick={onButtonClick} className="btn-primary flex items-center gap-2 text-sm shrink-0 whitespace-nowrap">
+          <Plus className="w-4 h-4 shrink-0" />
+          {buttonLabel}
+        </button>
+      )}
     </div>
   </div>
 )
@@ -88,7 +90,7 @@ interface PageContainerProps {
 }
 
 export const PageContainer: FC<PageContainerProps> = ({ children }) => (
-  <div className="max-w-4xl mx-auto py-4 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-400">
+  <div className="max-w-4xl mx-auto py-6 px-4 sm:px-6 md:px-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-400">
     {children}
   </div>
 )

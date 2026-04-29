@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef, useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { Folder, FileText, Clock, Loader2, Plus } from "lucide-react"
+import { Folder, FileText, Clock, Loader2, Plus, ChevronDown } from "lucide-react"
+import gsap from "gsap"
+import { useGSAP } from "@gsap/react"
+
+gsap.registerPlugin(useGSAP)
 import { useDocuments } from "../hooks/use-documents"
 import { useFolders } from "../hooks/use-folders"
 import { useDataRefresh } from "../hooks/use-data-refresh"
@@ -21,10 +25,46 @@ export function DocumentsPage() {
 
   const [showDocForm, setShowDocForm] = useState(false)
   const [showFolderForm, setShowFolderForm] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    if (dropdownOpen) {
+      gsap.to(menuRef.current, {
+        autoAlpha: 1,
+        y: 0,
+        scale: 1,
+        duration: 0.2,
+        ease: "power2.out",
+        pointerEvents: "auto"
+      })
+    } else {
+      gsap.to(menuRef.current, {
+        autoAlpha: 0,
+        y: -10,
+        scale: 0.95,
+        duration: 0.15,
+        ease: "power2.in",
+        pointerEvents: "none"
+      })
+    }
+  }, { dependencies: [dropdownOpen], scope: dropdownRef })
+  
   const [title, setTitle] = useState("")
   const [folderName, setFolderName] = useState("")
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   // Filter documents and folders based on current folder context
   const currentFolder = useMemo(() => {
@@ -152,17 +192,36 @@ export function DocumentsPage() {
       <PageHeader
         title={isRoot ? "Documents" : currentFolder?.name || "Folder"}
         description={description}
-        buttonLabel="New document"
-        onButtonClick={() => setShowDocForm(true)}
-        buttonId="create-document-btn"
         extraButtons={
-          <button
-            onClick={() => setShowFolderForm(true)}
-            className="btn-secondary flex items-center gap-2 text-sm"
-          >
-            <Plus className="w-4 h-4" />
-            New folder
-          </button>
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="btn-primary flex items-center gap-2 text-sm whitespace-nowrap shrink-0"
+            >
+              <span>New...</span>
+              <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            <div 
+              ref={menuRef}
+              className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-[#e9eaef] py-1.5 z-50 overflow-hidden"
+              style={{ opacity: 0, visibility: 'hidden' }}
+            >
+              <button
+                onClick={() => { setShowDocForm(true); setDropdownOpen(false) }}
+                className="w-full text-left px-4 py-2.5 text-sm font-medium text-[#1c1c1e] hover:bg-[#f0f1f5] flex items-center gap-2.5 transition-colors"
+              >
+                <FileText className="w-4 h-4 text-[#5b76fe]" />
+                Document
+              </button>
+              <button
+                onClick={() => { setShowFolderForm(true); setDropdownOpen(false) }}
+                className="w-full text-left px-4 py-2.5 text-sm font-medium text-[#1c1c1e] hover:bg-[#f0f1f5] flex items-center gap-2.5 transition-colors"
+              >
+                <Folder className="w-4 h-4 text-[#f57c00]" />
+                Folder
+              </button>
+            </div>
+          </div>
         }
       />
 

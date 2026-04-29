@@ -77,23 +77,25 @@ export function DocumentDetailPage() {
   return (
     <div className="mx-auto w-full max-w-5xl animate-in fade-in duration-300">
       {/* Toolbar */}
-      <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:px-6">
-        <BackButton
-          onClick={() => navigate("/dashboard/documents")}
-          aria-label="Go back to documents"
-        />
-        <input
-          id="document-title-edit"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="min-w-0 flex-1 border-b border-transparent bg-transparent pb-2 text-lg font-medium transition-colors focus:border-[#5b76fe] focus:outline-none"
-          placeholder="Title..."
-        />
+      <div className="flex flex-row flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <BackButton
+            onClick={() => navigate("/dashboard/documents")}
+            aria-label="Go back to documents"
+          />
+          <input
+            id="document-title-edit"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="min-w-0 flex-1 border-b border-transparent bg-transparent pb-1 text-lg font-medium transition-colors focus:border-[#5b76fe] focus:outline-none"
+            placeholder="Title..."
+          />
+        </div>
         <button
           id="save-document-btn"
           onClick={handleSave}
           disabled={saving}
-          className="btn-primary flex items-center justify-center gap-1.5 text-sm disabled:opacity-60 sm:justify-start"
+          className="btn-primary flex items-center justify-center gap-1.5 text-sm disabled:opacity-60 shrink-0"
         >
           {saving
             ? <Loader2 className="w-4 h-4 animate-spin" />

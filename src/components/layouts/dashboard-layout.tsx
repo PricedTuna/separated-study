@@ -1,7 +1,12 @@
 import { useRef, useState, useMemo } from "react"
 import { useNavigate, useLocation, Outlet } from "react-router-dom"
 import { Download, Upload, FileJson, Loader2, Folder, FileText, Menu } from "lucide-react"
+import gsap from "gsap"
+import { useGSAP } from "@gsap/react"
 import { Sidebar, type SidebarSection, type SidebarItem } from "../ui/sidebar"
+
+gsap.registerPlugin(useGSAP)
+
 import { Breadcrumb, type BreadcrumbItem } from "../ui/breadcrumb"
 import { useDataRefresh } from "../../hooks/use-data-refresh"
 import { useFolders } from "../../hooks/use-folders"
@@ -41,6 +46,8 @@ export function DashboardLayout() {
   const [importResult, setImportResult] = useState<{ success: boolean; message: string } | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const backdropRef = useRef<HTMLButtonElement>(null)
+  const sidebarRef = useRef<HTMLDivElement>(null)
   const { triggerRefresh } = useDataRefresh()
   const { folders, reload: reloadFolders } = useFolders()
   const { documents } = useDocuments()
@@ -236,18 +243,41 @@ export function DashboardLayout() {
       : [])
   ].filter(id => id !== "doc-documents" && id !== "doc-decks")
 
-  return (
-    <div className="min-h-screen bg-[#fbfbfd] lg:flex">
-      {isSidebarOpen && (
-        <button
-          type="button"
-          aria-label="Close sidebar"
-          className="fixed inset-0 z-30 bg-[#1c1c1e]/35 backdrop-blur-sm lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
+  useGSAP(() => {
+    const mm = gsap.matchMedia()
+    
+    mm.add("(max-width: 1023px)", () => {
+      if (isSidebarOpen) {
+        gsap.to(backdropRef.current, { autoAlpha: 1, duration: 0.3, ease: "power2.out" })
+        gsap.to(sidebarRef.current, { x: 0, duration: 0.3, ease: "power3.out" })
+      } else {
+        gsap.to(backdropRef.current, { autoAlpha: 0, duration: 0.3, ease: "power2.in" })
+        gsap.to(sidebarRef.current, { x: "-100%", duration: 0.3, ease: "power3.in" })
+      }
+    })
 
-      <div className={`fixed inset-y-0 left-0 z-40 w-72 transform transition-transform duration-200 ease-out lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+    mm.add("(min-width: 1024px)", () => {
+      gsap.set(sidebarRef.current, { clearProps: "all" })
+      gsap.set(backdropRef.current, { clearProps: "all" })
+    })
+
+    return () => mm.revert()
+  }, { dependencies: [isSidebarOpen] })
+
+  return (
+    <div className="min-h-[100dvh] bg-[#fbfbfd] lg:flex">
+      <button
+        ref={backdropRef}
+        type="button"
+        aria-label="Close sidebar"
+        className="fixed inset-0 z-30 bg-[#1c1c1e]/35 backdrop-blur-sm lg:hidden invisible opacity-0"
+        onClick={() => setIsSidebarOpen(false)}
+      />
+
+      <div 
+        ref={sidebarRef}
+        className="fixed inset-y-0 left-0 z-40 w-72 -translate-x-full lg:sticky lg:top-0 lg:z-auto lg:h-[100dvh] lg:translate-x-0"
+      >
         <Sidebar
           sections={sidebarSections}
           onItemClick={handleSidebarItemClick}
@@ -256,7 +286,7 @@ export function DashboardLayout() {
       </div>
 
       {/* Main content */}
-      <main className="flex min-h-screen min-w-0 flex-1 flex-col">
+      <main className="flex min-h-[100dvh] min-w-0 flex-1 flex-col">
         {/* Top bar */}
         <header className="sticky top-0 z-20 flex min-h-14 items-center justify-between gap-3 border-b border-[#e9eaef] bg-white/90 px-3 backdrop-blur sm:px-4">
           <div className="flex min-w-0 items-center gap-2">
