@@ -81,19 +81,18 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
   useGSAP(() => {
     if (flipped && buttonsWrapperRef.current && buttonsRef.current) {
       // Smoothly animate the wrapper height to prevent layout jump
-      gsap.fromTo(buttonsWrapperRef.current,
-        { height: 0, overflow: "hidden" },
-        { 
-          height: "auto", 
-          duration: 0.4, 
-          ease: "power2.out",
-          onComplete: () => {
-            if (buttonsWrapperRef.current) {
-              gsap.set(buttonsWrapperRef.current, { overflow: "visible" })
-            }
+      gsap.to(buttonsWrapperRef.current, { 
+        height: "auto", 
+        autoAlpha: 1,
+        duration: 0.4, 
+        ease: "power2.out",
+        overwrite: true,
+        onComplete: () => {
+          if (buttonsWrapperRef.current) {
+            gsap.set(buttonsWrapperRef.current, { overflow: "visible" })
           }
         }
-      )
+      })
 
       // Animate buttons from hidden state and slightly below
       gsap.fromTo(buttonsRef.current.children, 
@@ -107,9 +106,19 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
           stagger: 0.04,
           duration: 0.35,
           ease: "power2.out",
-          delay: 0.05
+          delay: 0.05,
+          overwrite: true
         }
       )
+    } else if (!flipped && buttonsWrapperRef.current) {
+      gsap.to(buttonsWrapperRef.current, {
+        height: 0,
+        autoAlpha: 0,
+        duration: 0.3,
+        ease: "power2.in",
+        overflow: "hidden",
+        overwrite: true
+      })
     }
   }, { dependencies: [flipped], scope: containerRef })
 
@@ -118,27 +127,13 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
     setIsAnimating(true)
 
     try {
-      const tl = gsap.timeline()
-
-      // Smooth exit: card moves down and buttons collapse
-      tl.to(cardRef.current, {
+      // Smooth exit: card moves down
+      await gsap.to(cardRef.current, {
         y: 15,
         opacity: 0,
         duration: 0.3,
         ease: "power2.in"
       })
-      
-      if (buttonsWrapperRef.current) {
-        tl.to(buttonsWrapperRef.current, {
-          height: 0,
-          opacity: 0,
-          overflow: "hidden",
-          duration: 0.3,
-          ease: "power2.in"
-        }, 0)
-      }
-
-      await tl.play()
 
       if (mode === "srs") {
         await onResult(activeCard.id, result)
@@ -229,10 +224,13 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
             </div>
           </div>
 
-          {/* Answer buttons */}
-          {flipped && (
-            <div ref={buttonsWrapperRef} className="w-full overflow-hidden px-4 -mx-4">
-              <div className="pt-10 pb-12">
+          {/* Answer buttons wrapper (always rendered for GSAP exit animations) */}
+          <div 
+            ref={buttonsWrapperRef} 
+            className="w-full overflow-hidden px-4 -mx-4"
+            style={{ height: 0, opacity: 0, visibility: 'hidden' }}
+          >
+            <div className="pt-10 pb-12">
                 {mode === "srs" && (
                   <div ref={buttonsRef} className="grid grid-cols-4 gap-4 w-full">
                     <button
@@ -291,8 +289,7 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
                   </div>
                 )}
               </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

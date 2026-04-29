@@ -96,6 +96,7 @@ export function SignupPage() {
               <label htmlFor="name" className="text-sm font-medium text-[#1c1c1e]">Name</label>
               <input
                 id="name"
+                autoFocus
                 type="text"
                 placeholder="John Doe"
                 value={name}

@@ -139,6 +139,31 @@ export const Dialog: FC<DialogProps> = ({
   }, [open])
 
   useEffect(() => {
+    if (open) {
+      // Focus the first element with autoFocus or the first input/textarea
+      // We use a slightly longer delay and requestAnimationFrame to ensure
+      // the DOM is ready, not inert, and animations are in progress
+      const timer = setTimeout(() => {
+        requestAnimationFrame(() => {
+          const el = panelRef.current?.querySelector(
+            '[autofocus], [autoFocus], input:not([type="hidden"]), textarea, select'
+          ) as HTMLElement
+          if (el) {
+            el.focus()
+            // If it's a text input, ensure cursor is visible/at end
+            if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+              const val = el.value
+              el.value = ""
+              el.value = val
+            }
+          }
+        })
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [open])
+
+  useEffect(() => {
     if (!open) return
 
     const previousOverflow = document.body.style.overflow

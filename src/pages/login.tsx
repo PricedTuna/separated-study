@@ -88,6 +88,7 @@ export function LoginPage() {
               <label htmlFor="email" className="text-sm font-medium text-[#1c1c1e]">Email</label>
               <input
                 id="email"
+                autoFocus
                 type="email"
                 placeholder="name@example.com"
                 value={email}

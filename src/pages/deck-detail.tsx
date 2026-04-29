@@ -262,72 +262,74 @@ export function DeckDetailPage() {
         description="Create a card for this deck and optionally link it to a document."
         size="lg"
       >
-        <form onSubmit={handleCreate} className="space-y-5">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-1.5">
-              <label htmlFor="card-front-input" className="text-xs font-medium text-[#555a6a]">Front</label>
-              <textarea
-                id="card-front-input"
-                autoFocus
-                value={form.front}
-                onChange={(e) => setForm((p) => ({ ...p, front: e.target.value }))}
-                placeholder="Question or concept..."
-                rows={4}
-                className="input-miro w-full text-sm resize-none"
-              />
+        {showForm && (
+          <form onSubmit={handleCreate} className="space-y-5">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-1.5">
+                <label htmlFor="card-front-input" className="text-xs font-medium text-[#555a6a]">Front</label>
+                <textarea
+                  id="card-front-input"
+                  autoFocus
+                  value={form.front}
+                  onChange={(e) => setForm((p) => ({ ...p, front: e.target.value }))}
+                  placeholder="Question or concept..."
+                  rows={4}
+                  className="input-miro w-full text-sm resize-none"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="card-back-input" className="text-xs font-medium text-[#555a6a]">Back</label>
+                <textarea
+                  id="card-back-input"
+                  value={form.back}
+                  onChange={(e) => setForm((p) => ({ ...p, back: e.target.value }))}
+                  placeholder="Answer or definition..."
+                  rows={4}
+                  className="input-miro w-full text-sm resize-none"
+                />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <label htmlFor="card-back-input" className="text-xs font-medium text-[#555a6a]">Back</label>
-              <textarea
-                id="card-back-input"
-                value={form.back}
-                onChange={(e) => setForm((p) => ({ ...p, back: e.target.value }))}
-                placeholder="Answer or definition..."
-                rows={4}
-                className="input-miro w-full text-sm resize-none"
-              />
-            </div>
-          </div>
 
-          {documents.length > 0 && (
-            <div className="space-y-1.5">
-              <label htmlFor="card-document-select" className="text-xs font-medium text-[#555a6a]">
-                Link to document <span className="text-[#a5a8b5] font-normal">(optional)</span>
-              </label>
-              <select
-                id="card-document-select"
-                value={form.documentId}
-                onChange={(e) => setForm((p) => ({ ...p, documentId: e.target.value }))}
-                className="input-miro w-full text-sm appearance-none"
+            {documents.length > 0 && (
+              <div className="space-y-1.5">
+                <label htmlFor="card-document-select" className="text-xs font-medium text-[#555a6a]">
+                  Link to document <span className="text-[#a5a8b5] font-normal">(optional)</span>
+                </label>
+                <select
+                  id="card-document-select"
+                  value={form.documentId}
+                  onChange={(e) => setForm((p) => ({ ...p, documentId: e.target.value }))}
+                  className="input-miro w-full text-sm appearance-none"
+                >
+                  <option value="">— None —</option>
+                  {documents.map((d) => (
+                    <option key={d.id} value={d.id}>{d.title}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {error && <p className="text-red-500 text-xs">{error}</p>}
+
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={closeForm}
+                className="btn-secondary text-sm"
               >
-                <option value="">— None —</option>
-                {documents.map((d) => (
-                  <option key={d.id} value={d.id}>{d.title}</option>
-                ))}
-              </select>
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!form.front.trim() || !form.back.trim() || creating}
+                className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Add Card
+              </button>
             </div>
-          )}
-
-          {error && <p className="text-red-500 text-xs">{error}</p>}
-
-          <div className="flex gap-2 justify-end">
-            <button
-              type="button"
-              onClick={closeForm}
-              className="btn-secondary text-sm"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!form.front.trim() || !form.back.trim() || creating}
-              className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Add Card
-            </button>
-          </div>
-        </form>
+          </form>
+        )}
       </Dialog>
 
       {/* Cards grid */}
