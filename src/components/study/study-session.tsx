@@ -15,6 +15,7 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
   const [flipped, setFlipped] = useState(false)
   const [sessionTotal, setSessionTotal] = useState(0)
 
+  // Initialize cards when initialCards or mode changes
   useEffect(() => {
     let sessionCards = [...initialCards]
     if (mode === "free") {
@@ -22,23 +23,37 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
       sessionCards = sessionCards.sort(() => Math.random() - 0.5)
     }
     setCards(sessionCards)
+    setCurrentIndex(0)
+    setFlipped(false)
     setSessionTotal(sessionCards.length)
   }, [initialCards, mode])
 
-  if (cards.length === 0) {
-    return null
-  }
+  // Handle parent shrinking initialCards for SRS mode
+  useEffect(() => {
+    if (mode === "srs") {
+      setCards(initialCards)
+      setCurrentIndex(0)
+      setFlipped(false)
+    }
+  }, [initialCards, mode])
 
-  const currentCard = cards[currentIndex]
+  // In SRS mode, cards length changes. In Free mode, index changes.
+  const progress = mode === "srs" 
+    ? Math.min(sessionTotal, sessionTotal - cards.length + 1)
+    : currentIndex + 1
+
+  const activeCard = mode === "srs" ? cards[0] : cards[currentIndex]
+
+  // Exit when no cards to study (only after initialized)
+  useEffect(() => {
+    if (sessionTotal > 0 && (!activeCard || cards.length === 0)) {
+      onExit()
+    }
+  }, [activeCard, cards.length, sessionTotal, onExit])
 
   const handleAction = async (result: CardResult) => {
     if (mode === "srs") {
-      await onResult(currentCard.id, result)
-      // In SRS mode, the parent might re-fetch or we just move on locally
-      // Actually, if parent re-fetches, initialCards will shrink.
-      // But we can also just move index locally to make UI instant and not depend on parent re-rendering.
-      // Wait, if parent gives new initialCards, the effect re-runs if initialCards changes reference!
-      // Let's just rely on parent OR do local shrinking. Parent shrinks `dueCards`, so `initialCards` changes.
+      await onResult(activeCard.id, result)
     } else {
       // Free mode: just go to next card
       const nextIndex = currentIndex + 1
@@ -51,22 +66,7 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
     }
   }
 
-  // Handle parent shrinking initialCards for SRS mode
-  useEffect(() => {
-    if (mode === "srs") {
-      setCards(initialCards)
-    }
-  }, [initialCards, mode])
-
-  // In SRS mode, cards length changes. In Free mode, index changes.
-  const progress = mode === "srs" 
-    ? Math.min(sessionTotal, sessionTotal - cards.length + 1)
-    : currentIndex + 1
-
-  const activeCard = mode === "srs" ? cards[0] : cards[currentIndex]
-
-  if (!activeCard) {
-    onExit()
+  if (!activeCard || cards.length === 0) {
     return null
   }
 

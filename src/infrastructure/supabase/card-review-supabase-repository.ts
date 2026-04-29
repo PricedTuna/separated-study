@@ -71,7 +71,7 @@ export class CardReviewSupabaseRepository implements ICardReviewRepository {
       .select("*")
       .eq("id", id)
       .eq("user_id", userId)
-      .single()
+      .maybeSingle()
 
     if (error || !data) return null
     return mapToCardReview(data as CardReviewsRow)
@@ -86,7 +86,7 @@ export class CardReviewSupabaseRepository implements ICardReviewRepository {
       .select("*")
       .eq("card_id", cardId)
       .eq("user_id", userId)
-      .single()
+      .maybeSingle()
 
     if (error || !data) return null
     return mapToCardReview(data as CardReviewsRow)

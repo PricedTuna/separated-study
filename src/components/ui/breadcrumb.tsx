@@ -1,6 +1,11 @@
 import { Link } from "react-router-dom"
 import { ArrowLeft, ChevronRight } from "lucide-react"
 import { cn } from "../../lib/utils"
+import { useGSAP } from "@gsap/react"
+import gsap from "gsap"
+import { useRef, useState, useEffect } from "react"
+
+gsap.registerPlugin(useGSAP)
 
 export interface BreadcrumbItem {
   id: string
@@ -27,21 +32,78 @@ export function Breadcrumb({
   rootPath = "/dashboard/documents",
   className,
 }: BreadcrumbProps) {
-  if (items.length === 0) return null
+  const containerRef = useRef(null)
+  const [animatedItems, setAnimatedItems] = useState<BreadcrumbItem[]>(items)
+  const [isExiting, setIsExiting] = useState(false)
+
+  // Sync when items change: animate out, then update
+  useEffect(() => {
+    if (animatedItems.length === 0) {
+      setAnimatedItems(items)
+      return
+    }
+    if (JSON.stringify(animatedItems) !== JSON.stringify(items)) {
+      setIsExiting(true)
+      const ctx = gsap.context(() => {
+        gsap.to(".breadcrumb-item", {
+          opacity: 0,
+          x: -10,
+          duration: 0.2,
+          stagger: 0.05,
+          ease: "power2.in",
+          onComplete: () => {
+            setAnimatedItems(items)
+            setIsExiting(false)
+          },
+        })
+      }, containerRef)
+      return () => ctx.revert()
+    }
+  }, [items])
+
+  // Enter animation
+  useGSAP(
+    () => {
+      if (isExiting) return
+      gsap.fromTo(
+        ".breadcrumb-container",
+        { opacity: 0, y: -5 },
+        { opacity: 1, y: 0, duration: 0.2, ease: "power2.out" }
+      )
+      gsap.fromTo(
+        ".breadcrumb-root",
+        { opacity: 0, x: -10 },
+        { opacity: 1, x: 0, duration: 0.3, ease: "power2.out", delay: 0.05 }
+      )
+      gsap.fromTo(
+        ".breadcrumb-item",
+        { opacity: 0, x: -10 },
+        { opacity: 1, x: 0, duration: 0.3, stagger: 0.1, ease: "power2.out", delay: 0.1 }
+      )
+    },
+    {
+      scope: containerRef,
+      dependencies: [animatedItems, isExiting],
+    }
+  )
+
+  if (items.length === 0 && !isExiting) return null
+
+  const displayItems = animatedItems
 
   return (
-    <div className={cn("flex items-center gap-1 mb-4 flex-wrap", className)}>
+    <div ref={containerRef} className={cn("breadcrumb-container flex items-center gap-1 mb-4 flex-wrap", className)}>
       <Link
         to={rootPath}
-        className="flex items-center gap-1 text-xs text-[#555a6a] hover:text-[#1c1c1e] transition-colors"
+        className="breadcrumb-root flex items-center gap-1 text-xs text-[#555a6a] hover:text-[#1c1c1e] transition-colors"
       >
         <ArrowLeft className="w-3 h-3" />
         {rootLabel}
       </Link>
-      {items.map((item, idx) => (
-        <div key={item.id} className="flex items-center gap-1">
+      {displayItems.map((item, idx) => (
+        <div key={item.id} className="breadcrumb-item flex items-center gap-1">
           <ChevronRight className="w-3 h-3 text-[#a5a8b5]" />
-          {idx === items.length - 1 ? (
+          {idx === displayItems.length - 1 ? (
             <span className="text-xs font-medium text-[#1c1c1e]">{item.name}</span>
           ) : (
             <Link
