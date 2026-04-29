@@ -82,11 +82,16 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
     if (flipped && buttonsWrapperRef.current && buttonsRef.current) {
       // Smoothly animate the wrapper height to prevent layout jump
       gsap.fromTo(buttonsWrapperRef.current,
-        { height: 0 },
+        { height: 0, overflow: "hidden" },
         { 
           height: "auto", 
           duration: 0.4, 
-          ease: "power2.out" 
+          ease: "power2.out",
+          onComplete: () => {
+            if (buttonsWrapperRef.current) {
+              gsap.set(buttonsWrapperRef.current, { overflow: "visible" })
+            }
+          }
         }
       )
 
@@ -127,6 +132,7 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
         tl.to(buttonsWrapperRef.current, {
           height: 0,
           opacity: 0,
+          overflow: "hidden",
           duration: 0.3,
           ease: "power2.in"
         }, 0)
@@ -225,8 +231,8 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
 
           {/* Answer buttons */}
           {flipped && (
-            <div ref={buttonsWrapperRef} className="w-full overflow-hidden">
-              <div className="pt-10">
+            <div ref={buttonsWrapperRef} className="w-full overflow-hidden px-4 -mx-4">
+              <div className="pt-10 pb-12">
                 {mode === "srs" && (
                   <div ref={buttonsRef} className="grid grid-cols-4 gap-4 w-full">
                     <button

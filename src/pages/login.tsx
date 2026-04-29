@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
-import { Loader2 } from "lucide-react"
+import { Loader2, Brain } from "lucide-react"
 import { supabase } from "../lib/supabase-client"
 
 export function LoginPage() {
@@ -35,11 +35,7 @@ export function LoginPage() {
       <div className="hidden lg:flex flex-col justify-between w-[440px] bg-[#eef0ff] p-12 shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-6 h-6 rounded bg-[#5b76fe] flex items-center justify-center">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="white">
-              <rect x="1" y="1" width="4" height="4" rx="0.5" />
-              <rect x="7" y="1" width="4" height="4" rx="0.5" />
-              <rect x="1" y="7" width="4" height="4" rx="0.5" />
-            </svg>
+            <Brain className="w-4 h-4 text-white" strokeWidth={2.5} />
           </div>
           <span
             className="text-[#1c1c1e] text-[15px] font-medium"
@@ -70,11 +66,7 @@ export function LoginPage() {
           {/* Mobile logo */}
           <div className="flex lg:hidden items-center gap-2">
             <div className="w-6 h-6 rounded bg-[#5b76fe] flex items-center justify-center">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="white">
-                <rect x="1" y="1" width="4" height="4" rx="0.5" />
-                <rect x="7" y="1" width="4" height="4" rx="0.5" />
-                <rect x="1" y="7" width="4" height="4" rx="0.5" />
-              </svg>
+              <Brain className="w-4 h-4 text-white" strokeWidth={2.5} />
             </div>
             <span className="text-[#1c1c1e] text-[15px] font-medium" style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}>
               Spaced Study

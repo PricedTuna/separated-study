@@ -1,4 +1,5 @@
 import { type ReactNode, useState, useEffect } from "react"
+import { Brain } from "lucide-react"
 
 export interface SidebarItem {
   id: string
@@ -137,10 +138,8 @@ export function Sidebar({
     <aside className={`w-56 bg-white flex flex-col shrink-0 border-r border-[#e9eaef] ${className ?? ""}`}>
       <div className="p-3 border-b border-[#e9eaef]">
         <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer">
-          <div className="w-5 h-5 rounded bg-[#5b76fe] flex items-center justify-center">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="white">
-              <path d="M2 2h8v8H2V2zm1 1v6h6V3H3z" />
-            </svg>
+          <div className="w-6 h-6 rounded bg-[#5b76fe] flex items-center justify-center">
+            <Brain className="w-4 h-4 text-white" strokeWidth={2.5} />
           </div>
           <span className="text-sm font-medium text-[#1c1c1e]">Spaced Study</span>
         </div>

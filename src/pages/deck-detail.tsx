@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { ArrowLeft, Plus, Loader2, CreditCard, Check, X, Eye, Trash2, BrainCircuit } from "lucide-react"
+import { ArrowLeft, Plus, Loader2, CreditCard, Check, X, Eye, Trash2, BrainCircuit, CheckCircle2, RotateCcw } from "lucide-react"
+import gsap from "gsap"
+import { useGSAP } from "@gsap/react"
+
+gsap.registerPlugin(useGSAP)
 import { cardService, deckService, documentService } from "../lib/container"
 import { useDataRefresh } from "../hooks/use-data-refresh"
 import { confirmDelete } from "../lib/swal"
@@ -129,7 +133,24 @@ export function DeckDetailPage() {
   }
 
   function toggleFlip(cardId: string) {
-    setFlipped((p) => ({ ...p, [cardId]: !p[cardId] }))
+    const isCurrentlyFlipped = flipped[cardId] ?? false
+    
+    // Minimalist flip animation targeting the specific card content
+    const tl = gsap.timeline()
+    tl.to(`[data-card-id="${cardId}"] .card-inner`, {
+      opacity: 0,
+      scale: 0.98,
+      duration: 0.15,
+      ease: "power2.in",
+      onComplete: () => {
+        setFlipped((p) => ({ ...p, [cardId]: !isCurrentlyFlipped }))
+      }
+    }).to(`[data-card-id="${cardId}"] .card-inner`, {
+      opacity: 1,
+      scale: 1,
+      duration: 0.2,
+      ease: "power2.out"
+    })
   }
 
   const startStudy = (type: "srs" | "free") => {
@@ -319,69 +340,55 @@ export function DeckDetailPage() {
           </div>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 p-6">
+        <div className="grid gap-6 md:grid-cols-2 p-6">
           {cards.map((card, i) => {
             const isFlipped = flipped[card.id] ?? false
             const linkedDoc = documents.find((d) => d.id === card.documentId)
             return (
               <div
                 key={card.id}
-                className={`card-miro overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300 transition-all ${isFlipped ? 'ring-2 ring-[#5b76fe] shadow-md' : 'hover:shadow-md'}`}
+                data-card-id={card.id}
+                className={`card-miro overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300 transition-all cursor-pointer ${isFlipped ? 'ring-2 ring-[#5b76fe] shadow-md bg-[#fcfdff]' : 'hover:shadow-md'}`}
                 style={{ animationDelay: `${i * 40}ms` }}
+                onClick={() => toggleFlip(card.id)}
               >
-                <div 
-                  className={`p-5 min-h-[140px] cursor-pointer relative transition-colors ${isFlipped ? 'bg-[#eef0ff]' : ''}`} 
-                  onClick={() => toggleFlip(card.id)}
-                >
-                  <div className="absolute top-4 right-4 flex items-center gap-2">
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/60 backdrop-blur-sm ${resultColor[card.lastResult]}`}>
+                <div className="card-inner p-5 min-h-[160px] flex flex-col">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#a5a8b5] flex items-center gap-1.5">
+                      <BrainCircuit className="w-3.5 h-3.5 text-[#5b76fe]" />
+                      {isFlipped ? "Answer" : "Question"}
+                    </span>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-50 border border-[#e9eaef] ${resultColor[card.lastResult]}`}>
                       {resultLabel[card.lastResult]}
                     </span>
                   </div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#a5a8b5] mb-3 flex items-center gap-1.5">
-                    <BrainCircuit className="w-3.5 h-3.5" />
-                    {isFlipped ? "Answer" : "Question"}
-                  </p>
-                  <p className="text-[#1c1c1e] text-[16px] leading-relaxed pr-16 font-medium">
-                    {isFlipped ? card.back : card.front}
-                  </p>
-                </div>
+                  
+                  <div className="flex-1 flex flex-col justify-center">
+                    <p className={`text-[#1c1c1e] text-[16px] leading-relaxed line-clamp-4 ${isFlipped ? 'font-bold' : 'font-medium'}`}>
+                      {isFlipped ? card.back : card.front}
+                    </p>
+                  </div>
 
-                <div className="border-t border-[#e9eaef] px-5 py-3 flex items-center gap-2 bg-white">
-                  {isFlipped ? (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        toggleFlip(card.id)
-                      }}
-                      className="text-xs font-medium text-[#5b76fe] hover:bg-[#eef0ff] px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
-                    >
-                      <Eye className="w-3.5 h-3.5" /> Show Question
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => toggleFlip(card.id)}
-                      className="text-xs font-medium text-[#5b76fe] hover:bg-[#eef0ff] px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
-                    >
-                      <Eye className="w-3.5 h-3.5" /> Show Answer
-                    </button>
-                  )}
-
-                  <div className="ml-auto flex items-center gap-3">
-                    {linkedDoc && (
-                      <button
-                        onClick={() => navigate(`/dashboard/documents/${linkedDoc.id}`)}
-                        className="text-[11px] font-medium text-[#888c9e] hover:text-[#5b76fe] transition-colors truncate max-w-[120px] flex items-center gap-1 bg-[#f5f5f5] px-2 py-1 rounded-md"
-                      >
+                  <div className="mt-4 pt-3 border-t border-[#f5f5f7] flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#5b76fe]">
+                      <Eye className="w-3.5 h-3.5" /> {isFlipped ? "Show Question" : "Show Answer"}
+                    </div>
+                    {!isFlipped && linkedDoc && (
+                      <div className="text-[10px] font-medium text-[#888c9e] flex items-center gap-1 bg-[#f5f5f7] px-2 py-1 rounded-md max-w-[120px] truncate">
                         📄 {linkedDoc.title}
+                      </div>
+                    )}
+                    {isFlipped && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDelete(card.id)
+                        }}
+                        className="text-[#a5a8b5] hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
-                    <button
-                      onClick={() => handleDelete(card.id)}
-                      className="text-[#a5a8b5] hover:text-red-500 hover:bg-red-50 p-1.5 rounded-md transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
               </div>
@@ -392,4 +399,3 @@ export function DeckDetailPage() {
     </div>
   )
 }
-
