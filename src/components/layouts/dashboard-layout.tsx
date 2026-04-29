@@ -234,7 +234,13 @@ export function DashboardLayout() {
       <Sidebar
         sections={sidebarSections}
         onItemClick={handleSidebarItemClick}
-        activePath={breadcrumbItems.map(f => `folder-${f.id}`)}
+        activePath={[
+          activeSection,
+          ...breadcrumbItems.map(f => `folder-${f.id}`),
+          ...(location.pathname.includes("/documents/") || location.pathname.match(/\/folders\/[^/]+\/[^/]+$/)
+            ? [`doc-${location.pathname.split("/").pop()}`] 
+            : [])
+        ].filter(id => id !== "doc-documents" && id !== "doc-decks")}
       />
 
       {/* Main content */}

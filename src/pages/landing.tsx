@@ -112,38 +112,107 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* FSRS Details Section */}
-        <section className="cta-section bg-[#1c1c1e] text-white rounded-[32px] md:rounded-[40px] p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-12">
-          <div className="md:w-1/2">
-            <h2 className="font-['Roobert_PRO_Medium',sans-serif] text-[40px] md:text-[48px] leading-[1.15] tracking-[-1.44px] mb-6">
-              Why FSRS?
+        {/* FSRS Explanation Section */}
+        <section className="fsrs-section mb-32">
+          <div className="text-center mb-16">
+            <h2 className="font-['Roobert_PRO_Medium',sans-serif] text-[40px] md:text-[56px] leading-[1.15] tracking-[-1.44px] mb-6">
+              The Science of Memory: <span className="text-[#5b76fe]">FSRS</span>
             </h2>
-            <p className="text-[18px] text-[#a5a8b5] leading-[1.45] mb-6">
-              FSRS models human memory using three continuous variables: <strong className="text-white">Difficulty</strong>, <strong className="text-white">Stability</strong>, and <strong className="text-white">Retrievability</strong>. 
-            </p>
-            <p className="text-[18px] text-[#a5a8b5] leading-[1.45]">
-              Unlike older algorithms like SM-2, FSRS adapts to your personal learning curve, ensuring you only study a card when you're about to forget it—keeping your memory target at ~90%.
+            <p className="text-[20px] text-[#555a6a] max-w-3xl mx-auto leading-[1.45] tracking-[-0.4px]">
+              FSRS (Free Spaced Repetition Scheduler) is a modern algorithm that models human memory using three continuous variables to optimize your study time.
             </p>
           </div>
-          <div className="md:w-1/2 bg-[#2a2a2d] p-8 rounded-[24px] w-full">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between border-b border-[#555a6a]/30 pb-4">
-                <span className="font-['Roobert_PRO_Medium',sans-serif] text-[#e3c5c5]">Again</span>
-                <span className="text-[#a5a8b5] text-sm">Reduces stability significantly</span>
+
+          <div className="grid md:grid-cols-3 gap-8 mb-16">
+            {/* Variable: Difficulty */}
+            <div className="feature-card bg-white p-8 rounded-[24px] border border-[#c7cad5] shadow-sm">
+              <div className="text-[12px] font-['Roobert_PRO_Medium',sans-serif] uppercase tracking-wider text-[#5b76fe] mb-2">Variable D</div>
+              <h3 className="font-['Roobert_PRO_Medium',sans-serif] text-[24px] mb-4 tracking-[-0.72px]">Difficulty</h3>
+              <p className="text-[16px] text-[#555a6a] leading-[1.5]">
+                Represents how inherently hard a card is. It adjusts based on your performance—increasing when you struggle and decreasing when you succeed easily.
+              </p>
+            </div>
+
+            {/* Variable: Stability */}
+            <div className="feature-card bg-white p-8 rounded-[24px] border border-[#c7cad5] shadow-sm">
+              <div className="text-[12px] font-['Roobert_PRO_Medium',sans-serif] uppercase tracking-wider text-[#00b473] mb-2">Variable S</div>
+              <h3 className="font-['Roobert_PRO_Medium',sans-serif] text-[24px] mb-4 tracking-[-0.72px]">Stability</h3>
+              <p className="text-[16px] text-[#555a6a] leading-[1.5]">
+                How long a memory is expected to last. Stability increases with every successful review, allowing for longer intervals between study sessions.
+              </p>
+            </div>
+
+            {/* Variable: Retrievability */}
+            <div className="feature-card bg-white p-8 rounded-[24px] border border-[#c7cad5] shadow-sm">
+              <div className="text-[12px] font-['Roobert_PRO_Medium',sans-serif] uppercase tracking-wider text-[#e3c5c5] mb-2">Variable R</div>
+              <h3 className="font-['Roobert_PRO_Medium',sans-serif] text-[24px] mb-4 tracking-[-0.72px]">Retrievability</h3>
+              <p className="text-[16px] text-[#555a6a] leading-[1.5]">
+                The probability of recalling a card at a given time. Our goal is to review cards when R is ~90%—the "forgetting threshold."
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-[#1c1c1e] text-white rounded-[32px] md:rounded-[40px] p-8 md:p-16 overflow-hidden relative">
+            <div className="flex flex-col lg:flex-row gap-12 items-center">
+              <div className="lg:w-1/2">
+                <h3 className="font-['Roobert_PRO_Medium',sans-serif] text-[32px] mb-6 tracking-[-0.8px]">The Fundamental Relationship</h3>
+                <p className="text-[18px] text-[#a5a8b5] leading-[1.5] mb-8">
+                  FSRS calculates your probability of recall using an exponential decay function. This allows for precision that legacy algorithms like SM-2 simply can't match.
+                </p>
+                <div className="bg-[#2a2a2d] p-6 rounded-2xl font-mono text-[20px] text-[#5b76fe] flex items-center justify-center border border-[#555a6a]/30">
+                  R(t) = exp(-t / S)
+                </div>
+                <p className="mt-4 text-[14px] text-[#555a6a] italic">Where t is days since last review and S is stability.</p>
               </div>
-              <div className="flex items-center justify-between border-b border-[#555a6a]/30 pb-4">
-                <span className="font-['Roobert_PRO_Medium',sans-serif] text-[#ffe6cd]">Hard</span>
-                <span className="text-[#a5a8b5] text-sm">Small stability increase</span>
-              </div>
-              <div className="flex items-center justify-between border-b border-[#555a6a]/30 pb-4">
-                <span className="font-['Roobert_PRO_Medium',sans-serif] text-[#00b473]">Good</span>
-                <span className="text-[#a5a8b5] text-sm">Normal stability increase</span>
-              </div>
-              <div className="flex items-center justify-between pt-2">
-                <span className="font-['Roobert_PRO_Medium',sans-serif] text-[#5b76fe]">Easy</span>
-                <span className="text-[#a5a8b5] text-sm">Large stability increase</span>
+
+              <div className="lg:w-1/2 w-full grid grid-cols-2 gap-4">
+                <div className="bg-[#2a2a2d] p-6 rounded-[24px] border border-[#555a6a]/30">
+                  <div className="text-[#e3c5c5] font-['Roobert_PRO_Medium',sans-serif] text-[20px] mb-2">Again</div>
+                  <div className="text-[14px] text-[#a5a8b5]">Stability drops significantly. Difficulty increases.</div>
+                </div>
+                <div className="bg-[#2a2a2d] p-6 rounded-[24px] border border-[#555a6a]/30">
+                  <div className="text-[#ffe6cd] font-['Roobert_PRO_Medium',sans-serif] text-[20px] mb-2">Hard</div>
+                  <div className="text-[14px] text-[#a5a8b5]">Small stability increase. Slight difficulty rise.</div>
+                </div>
+                <div className="bg-[#2a2a2d] p-6 rounded-[24px] border border-[#555a6a]/30">
+                  <div className="text-[#00b473] font-['Roobert_PRO_Medium',sans-serif] text-[20px] mb-2">Good</div>
+                  <div className="text-[14px] text-[#a5a8b5]">Optimal stability boost. Difficulty stabilizes.</div>
+                </div>
+                <div className="bg-[#2a2a2d] p-6 rounded-[24px] border border-[#555a6a]/30">
+                  <div className="text-[#5b76fe] font-['Roobert_PRO_Medium',sans-serif] text-[20px] mb-2">Easy</div>
+                  <div className="text-[14px] text-[#a5a8b5]">Large stability jump. Difficulty decreases.</div>
+                </div>
               </div>
             </div>
+          </div>
+
+          <div className="mt-16 grid md:grid-cols-2 gap-12 items-center">
+             <div>
+               <h3 className="font-['Roobert_PRO_Medium',sans-serif] text-[28px] mb-6 tracking-[-0.6px]">Better than Anki Default</h3>
+               <p className="text-[#555a6a] mb-4">
+                 Traditional algorithms like SM-2 use fixed multipliers. FSRS is a <strong>trainable</strong> model that adapts to how you specifically learn each piece of information.
+               </p>
+               <ul className="space-y-3">
+                 <li className="flex items-center gap-3 text-[#1c1c1e] font-medium">
+                   <div className="w-1.5 h-1.5 rounded-full bg-[#5b76fe]"></div>
+                   Reduces study load by 20-30%
+                 </li>
+                 <li className="flex items-center gap-3 text-[#1c1c1e] font-medium">
+                   <div className="w-1.5 h-1.5 rounded-full bg-[#5b76fe]"></div>
+                   Higher retention with less effort
+                 </li>
+                 <li className="flex items-center gap-3 text-[#1c1c1e] font-medium">
+                   <div className="w-1.5 h-1.5 rounded-full bg-[#5b76fe]"></div>
+                   Scientific basis: Ebbinghaus Forgetting Curve
+                 </li>
+               </ul>
+             </div>
+             <div className="bg-[#f0f1f5] p-8 rounded-[24px] border border-[#c7cad5]/50">
+               <h4 className="font-['Roobert_PRO_Medium',sans-serif] text-[18px] mb-4">Scientific Roots</h4>
+               <p className="text-[14px] text-[#555a6a] leading-[1.6]">
+                 FSRS is built on decades of cognitive science, from Hermann Ebbinghaus's early research on the forgetting curve to modern work by Cepeda et al. (2006) and Settles & Meeder (2016). It represents the state-of-the-art in distributed practice optimization.
+               </p>
+             </div>
           </div>
         </section>
       </main>

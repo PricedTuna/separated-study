@@ -157,14 +157,7 @@ export function Sidebar({
         ))}
       </nav>
 
-      <div className="p-2 border-t border-[#e9eaef]">
-        <button type="button" className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[#555a6a] hover:bg-[#f0f1f5]">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          <span>New</span>
-        </button>
-      </div>
+
     </aside>
   )
 }
