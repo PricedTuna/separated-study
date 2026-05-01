@@ -508,25 +508,21 @@ export function DashboardLayout() {
       routeContentRef.current,
       {
         autoAlpha: 0,
-        y: 14,
-        scale: 0.995,
-        filter: "blur(3px)",
+        clipPath: "inset(0 0 10px 0)",
       },
       {
         autoAlpha: 1,
-        y: 0,
-        scale: 1,
-        filter: "blur(0px)",
-        duration: 0.34,
+        clipPath: "inset(0 0 0px 0)",
+        duration: 0.26,
         ease: "power3.out",
         overwrite: "auto",
-        clearProps: "filter,transform,opacity,visibility",
+        clearProps: "clipPath,opacity,visibility",
       }
     )
   }, { scope: routeContentRef, dependencies: [location.pathname] })
 
   return (
-    <div className="min-h-[100dvh] bg-[#fbfbfd] lg:flex">
+    <div className="h-[100dvh] overflow-hidden bg-[#fbfbfd] lg:flex">
       <button
         ref={backdropRef}
         type="button"
@@ -547,7 +543,7 @@ export function DashboardLayout() {
       </div>
 
       {/* Main content */}
-      <main className="flex min-h-[100dvh] min-w-0 flex-1 flex-col">
+      <main className="flex h-[100dvh] min-w-0 flex-1 flex-col overflow-hidden">
         {/* Top bar */}
         <header className="sticky top-0 z-20 flex min-h-14 items-center justify-between gap-3 border-b border-[#e9eaef] bg-white/90 px-3 backdrop-blur sm:px-4">
           <div className="flex min-w-0 items-center gap-2">
@@ -777,7 +773,7 @@ export function DashboardLayout() {
         </Dialog>
 
         {/* Content */}
-        <div ref={routeContentRef} className="flex-1 bg-[#fbfbfd] will-change-transform">
+        <div ref={routeContentRef} className="scrollbar-none min-h-0 flex-1 overflow-y-auto bg-[#fbfbfd] will-change-opacity">
           <Outlet />
         </div>
       </main>

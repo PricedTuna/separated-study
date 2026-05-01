@@ -68,12 +68,13 @@
   * {
     @apply border-border;
   }
-  
+
   body {
     @apply bg-background text-foreground;
     font-family: 'Noto Sans', system-ui, sans-serif;
     font-size: 18px;
     line-height: 1.45;
+    overflow-x: hidden;
   }
 }
 
@@ -90,6 +91,15 @@
 @keyframes zoomIn {
   from { transform: scale(0.95); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }
 
 /* Button styles following Miro */
