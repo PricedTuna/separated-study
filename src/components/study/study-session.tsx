@@ -24,11 +24,25 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
   const [requeuedCardIds, setRequeuedCardIds] = useState<Set<string>>(new Set())
   const [sessionDone, setSessionDone] = useState(false)
   const [stats, setStats] = useState<Record<ResultStatKey, number>>({ again: 0, hard: 0, good: 0, easy: 0 })
+  const [isExiting, setIsExiting] = useState(false)
 
   const cardRef = useRef<HTMLDivElement>(null)
   const buttonsWrapperRef = useRef<HTMLDivElement>(null)
   const buttonsRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  const handleExit = () => {
+    if (isExiting) return
+    setIsExiting(true)
+    gsap.to(contentRef.current, {
+      opacity: 0,
+      y: -20,
+      duration: 0.3,
+      ease: "power2.out",
+      onComplete: () => onExit(),
+    })
+  }
 
   // Initialize cards when initialCards or mode changes
   useEffect(() => {
@@ -218,7 +232,7 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
     <div ref={containerRef} className="min-h-screen bg-[#f5f5f5] flex flex-col fixed inset-0 z-50">
       {/* Header */}
       <div className="bg-white border-b border-[#e9eaef] px-6 py-4 flex items-center justify-between shadow-sm">
-        <button onClick={onExit} className="btn-secondary flex items-center gap-1.5 text-sm">
+        <button onClick={handleExit} disabled={isExiting} className="btn-secondary flex items-center gap-1.5 text-sm disabled:opacity-50">
           <ArrowLeft className="w-4 h-4" />
           Exit Study
         </button>
@@ -238,7 +252,7 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
       </div>
 
       {/* Big Card */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 pb-24 overflow-y-auto">
+      <div ref={contentRef} className="flex-1 flex flex-col items-center justify-center p-6 pb-24 overflow-y-auto">
         <div className="w-full max-w-2xl">
           {!isCompleted && activeCard && (
           <div
@@ -292,16 +306,16 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
                     <RotateCcw className="w-4 h-4" /> Restart
                   </button>
                 )}
-                <button onClick={onExit} className="btn-primary text-sm">Exit</button>
+                <button onClick={handleExit} disabled={isExiting} className="btn-primary text-sm disabled:opacity-50">Exit</button>
               </div>
             </div>
           )}
 
-          {/* Answer buttons wrapper (always rendered for GSAP exit animations) */}
+          {/* Answer buttons wrapper - hidden when session is completed */}
+          {!isCompleted && (
           <div 
             ref={buttonsWrapperRef} 
             className="w-full overflow-hidden px-4 -mx-4"
-            style={{ height: 0, opacity: 0, visibility: 'hidden' }}
           >
             <div className="pt-10 pb-12">
                 {mode === "srs" && (
@@ -373,6 +387,7 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
                 )}
               </div>
           </div>
+          )}
         </div>
       </div>
     </div>
