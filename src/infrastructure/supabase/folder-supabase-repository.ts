@@ -2,30 +2,17 @@ import { createSupabaseAdapter } from "@/lib/storage/supabase-adapter.ts"
 import type { IFolderRepository } from "@/domain/repositories/folder-repository.ts"
 import type { Folder, CreateFolderInput, UpdateFolderInput } from "@/domain/models/folder.ts"
 
-const adapter = createSupabaseAdapter<{
-  id: string
-  name: string
-  parent_id: string | null
-  user_id: string
-  created_at: string
-  updated_at: string
-}>("folders")
+const adapter = createSupabaseAdapter<"folders">("folders")
 
-function mapToFolder(row: {
-  id: string
-  name: string
-  parent_id: string | null
-  user_id: string
-  created_at: string
-  updated_at: string
-}): Folder {
+function mapToFolder(row: Awaited<ReturnType<typeof adapter.findById>>): Folder {
+  if (!row) throw new Error("Folder not found")
   return {
     id: row.id,
     name: row.name,
     parentId: row.parent_id,
     userId: row.user_id,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    createdAt: row.created_at ?? new Date().toISOString(),
+    updatedAt: row.updated_at ?? new Date().toISOString(),
   }
 }
 
@@ -41,16 +28,8 @@ export class FolderSupabaseRepository implements IFolderRepository {
   }
 
   async findByParentId(parentId: string | null): Promise<Folder[]> {
-    const client = (adapter as any).client
-    let query = client.from("folders").select("*")
-    if (parentId === null) {
-      query = query.is("parent_id", null)
-    } else {
-      query = query.eq("parent_id", parentId)
-    }
-    const { data, error } = await query
-    if (error) throw error
-    return (data || []).map(mapToFolder)
+    const all = await adapter.findAll()
+    return all.filter((f) => f.parent_id === parentId).map(mapToFolder)
   }
 
   async create(input: CreateFolderInput): Promise<Folder> {
@@ -58,15 +37,15 @@ export class FolderSupabaseRepository implements IFolderRepository {
       name: input.name,
       parent_id: input.parentId ?? null,
     })
-    return mapToFolder(row as any)
+    return mapToFolder(row)
   }
 
   async update(id: string, input: UpdateFolderInput): Promise<Folder> {
     const row = await adapter.update(id, {
-      ...input,
+      name: input.name,
       parent_id: input.parentId ?? null,
-    } as any)
-    return mapToFolder(row as any)
+    })
+    return mapToFolder(row)
   }
 
   async delete(id: string): Promise<void> {

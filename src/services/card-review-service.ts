@@ -1,11 +1,14 @@
 import type { ICardReviewRepository } from "../domain/repositories/card-review-repository"
-import type { CardReview, CreateCardReviewInput, UpdateCardReviewInput } from "../models/card-review"
+import type { CardReview, CreateCardReviewInput } from "../domain/models/card-review"
 
 /**
  * CardReviewService — lógica de negocio para el seguimiento de revisiones spaced repetition.
  */
 export class CardReviewService {
-  constructor(private readonly repo: ICardReviewRepository) {}
+  repo: ICardReviewRepository
+  constructor(repo: ICardReviewRepository) {
+    this.repo = repo
+  }
 
   async getByCardId(cardId: string): Promise<CardReview | null> {
     return this.repo.findByCardId(cardId)

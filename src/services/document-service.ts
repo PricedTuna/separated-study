@@ -6,7 +6,10 @@ import type { Document, CreateDocumentInput, UpdateDocumentInput } from "../doma
  * No sabe nada de cómo se persisten los datos, solo opera a través del repo.
  */
 export class DocumentService {
-  constructor(private readonly repo: IDocumentRepository) {}
+  repo: IDocumentRepository
+  constructor(repo: IDocumentRepository) {
+    this.repo = repo
+  }
 
   getAll(): Promise<Document[]> {
     return this.repo.findAll()

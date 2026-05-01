@@ -2,27 +2,16 @@ import { createSupabaseAdapter } from "@/lib/storage/supabase-adapter.ts"
 import type { IDeckRepository } from "@/domain/repositories/deck-repository.ts"
 import type { Deck, CreateDeckInput, UpdateDeckInput } from "@/domain/models/deck.ts"
 
-const adapter = createSupabaseAdapter<{
-  id: string
-  name: string
-  description: string
-  created_at: string
-  updated_at: string
-}>("decks")
+const adapter = createSupabaseAdapter<"decks">("decks")
 
-function mapToDeck(row: {
-  id: string
-  name: string
-  description: string
-  created_at: string
-  updated_at: string
-}): Deck {
+function mapToDeck(row: Awaited<ReturnType<typeof adapter.findById>>): Deck {
+  if (!row) throw new Error("Deck not found")
   return {
     id: row.id,
     name: row.name,
-    description: row.description,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    description: row.description ?? "",
+    createdAt: row.created_at ?? new Date().toISOString(),
+    updatedAt: row.updated_at ?? new Date().toISOString(),
   }
 }
 
@@ -40,14 +29,17 @@ export class DeckSupabaseRepository implements IDeckRepository {
   async create(input: CreateDeckInput): Promise<Deck> {
     const row = await adapter.create({
       name: input.name,
-      description: input.description,
+      description: input.description ?? null,
     })
-    return mapToDeck(row as any)
+    return mapToDeck(row)
   }
 
   async update(id: string, input: UpdateDeckInput): Promise<Deck> {
-    const row = await adapter.update(id, input as any)
-    return mapToDeck(row as any)
+    const row = await adapter.update(id, {
+      name: input.name,
+      description: input.description ?? null,
+    })
+    return mapToDeck(row)
   }
 
   async delete(id: string): Promise<void> {

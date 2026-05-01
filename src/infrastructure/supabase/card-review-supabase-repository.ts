@@ -21,7 +21,8 @@ function mapToCardReview(row: CardReviewsRow): CardReview {
     reps: row.reps ?? 0,
     lapses: row.lapses ?? 0,
     state: (row.state as CardReview["state"]) ?? "unknown",
-    updatedAt: row.updated_at ?? "",
+    createdAt: row.updated_at ?? new Date().toISOString(),
+    updatedAt: row.updated_at ?? new Date().toISOString(),
   }
 }
 

@@ -7,10 +7,12 @@ import { DEFAULT_FSRS_PARAMS, calculateFSRS, toFSRSParams } from "../lib/fsrs"
  * CardService — lógica de negocio pura para las flashcards.
  */
 export class CardService {
-  constructor(
-    private readonly cardRepo: ICardRepository,
-    private readonly reviewRepo: ICardReviewRepository
-  ) {}
+  cardRepo: ICardRepository
+  reviewRepo: ICardReviewRepository
+  constructor(cardRepo: ICardRepository, reviewRepo: ICardReviewRepository) {
+    this.cardRepo = cardRepo
+    this.reviewRepo = reviewRepo
+  }
 
   getAll(): Promise<Card[]> {
     return this.cardRepo.findAll()

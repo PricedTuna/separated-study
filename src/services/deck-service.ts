@@ -6,7 +6,12 @@ import type { Deck, CreateDeckInput, UpdateDeckInput } from "../domain/models/de
  * DeckService — lógica de negocio para los mazos de flashcards.
  */
 export class DeckService {
-  constructor(private readonly repo: IDeckRepository, private readonly cardRepo: ICardRepository) {}
+  repo: IDeckRepository
+  cardRepo: ICardRepository
+  constructor(repo: IDeckRepository, cardRepo: ICardRepository) {
+    this.repo = repo
+    this.cardRepo = cardRepo
+  }
 
   getAll(): Promise<Deck[]> {
     return this.repo.findAll()

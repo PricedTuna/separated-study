@@ -17,7 +17,7 @@ export class DocumentLocalStorageRepository implements IDocumentRepository {
     return adapter.create({
       ...input,
       folderId: input.folderId ?? null,
-    })
+    } as unknown as Document)
   }
 
   async update(id: string, input: UpdateDocumentInput) {

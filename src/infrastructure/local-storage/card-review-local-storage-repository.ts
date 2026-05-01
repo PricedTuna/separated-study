@@ -1,8 +1,8 @@
 import { createLocalStorageAdapter } from "../../lib/storage/local-storage-adapter"
 import type { ICardReviewRepository } from "../../domain/repositories/card-review-repository"
-import type { CardReview, CreateCardReviewInput, UpdateCardReviewInput } from "../models/card-review"
+import type { CardReview, CreateCardReviewInput, UpdateCardReviewInput } from "../../domain/models/card-review"
 
-const adapter = createLocalStorageAdapter<CardReview & { cardId: string }>("spaced-study:card-reviews")
+const adapter = createLocalStorageAdapter<CardReview>("spaced-study:card-reviews")
 
 export class CardReviewLocalStorageRepository implements ICardReviewRepository {
   async findById(id: string) {
@@ -22,11 +22,9 @@ export class CardReviewLocalStorageRepository implements ICardReviewRepository {
 
   async create(input: CreateCardReviewInput) {
     return adapter.create({
-      cardId: input.cardId,
-      cardId: input.cardId,
       userId: "local-user",
       ...input,
-    })
+    } as unknown as CardReview)
   }
 
   async update(id: string, input: UpdateCardReviewInput) {

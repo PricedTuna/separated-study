@@ -14,7 +14,7 @@ export class DeckLocalStorageRepository implements IDeckRepository {
   }
 
   async create(input: { name: string; description: string }) {
-    return adapter.create(input)
+    return adapter.create(input as unknown as Deck)
   }
 
   async update(id: string, input: { name?: string; description?: string }) {

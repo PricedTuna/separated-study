@@ -1,18 +1,17 @@
 /**
- * SupabaseAdapter — implementación de StorageAdapter usando Supabase.
+ * SupabaseAdapter — adapter específico para Supabase.
  * Usa tipos directamente de Database["public"]["Tables"].
  * Requiere user_id del contexto de auth.
  */
 import { supabase, getCurrentUserId } from "../supabase-client"
 import type { Database } from "../../interfaces/supabase/database.types"
-import type { StorageAdapter } from "./storage-adapter"
 
 type DbTable = keyof Database["public"]["Tables"]
 type DbRow<T extends DbTable> = Database["public"]["Tables"][T]["Row"]
 type DbInsert<T extends DbTable> = Database["public"]["Tables"][T]["Insert"]
 type DbUpdate<T extends DbTable> = Database["public"]["Tables"][T]["Update"]
 
-export function createSupabaseAdapter<T extends DbTable>(tableName: T): StorageAdapter<DbRow<T>> {
+export function createSupabaseAdapter<T extends DbTable>(tableName: T) {
   return {
     async findAll() {
       const userId = await getCurrentUserId()

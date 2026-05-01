@@ -12,6 +12,7 @@ export interface CardReview {
   reps: number
   lapses: number
   state: CardReviewState
+  createdAt: string
   updatedAt: string
 }
 

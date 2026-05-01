@@ -5,7 +5,10 @@ import type { Folder, CreateFolderInput, UpdateFolderInput } from "../domain/mod
  * FolderService — lógica de negocio para carpetas.
  */
 export class FolderService {
-  constructor(private readonly repo: IFolderRepository) {}
+  repo: IFolderRepository
+  constructor(repo: IFolderRepository) {
+    this.repo = repo
+  }
 
   getAll(): Promise<Folder[]> {
     return this.repo.findAll()

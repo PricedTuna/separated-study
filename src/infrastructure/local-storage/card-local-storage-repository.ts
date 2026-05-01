@@ -1,6 +1,6 @@
 import { createLocalStorageAdapter } from "../../lib/storage/local-storage-adapter"
 import type { ICardRepository } from "../../domain/repositories/card-repository"
-import type { Card } from "../../domain/models/card"
+import type { Card, CardResult } from "../../domain/models/card"
 
 const adapter = createLocalStorageAdapter<Card>("spaced-study:cards")
 
@@ -28,11 +28,11 @@ export class CardLocalStorageRepository implements ICardRepository {
   async create(input: { deckId: string; documentId: string | null; front: string; back: string }) {
     return adapter.create({
       ...input,
-      lastResult: "unseen",
-    })
+      lastResult: "unseen" as CardResult,
+    } as unknown as Card)
   }
 
-  async update(id: string, input: { front?: string; back?: string; lastResult?: string; documentId?: string | null }) {
+  async update(id: string, input: { front?: string; back?: string; lastResult?: CardResult; documentId?: string | null }) {
     return adapter.update(id, input)
   }
 
