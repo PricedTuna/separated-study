@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import { Loader2, Brain } from "lucide-react"
 import { supabase } from "../lib/supabase-client"
@@ -9,6 +9,12 @@ export function LoginPage() {
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) navigate("/dashboard/documents", { replace: true })
+    })
+  }, [navigate])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -26,7 +32,7 @@ export function LoginPage() {
       return
     }
 
-    navigate("/dashboard/documents")
+    navigate("/dashboard/documents", { replace: true })
   }
 
   return (

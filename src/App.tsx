@@ -18,10 +18,17 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [authenticated, setAuthenticated] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setAuthenticated(!!data.user)
+    supabase.auth.getSession().then(({ data }) => {
+      setAuthenticated(!!data.session)
       setLoading(false)
     })
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthenticated(!!session)
+      setLoading(false)
+    })
+
+    return () => listener.subscription.unsubscribe()
   }, [])
 
   if (loading) {

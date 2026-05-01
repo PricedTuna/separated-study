@@ -207,7 +207,7 @@ export const Dialog: FC<DialogProps> = ({
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 ${open ? "pointer-events-auto" : "pointer-events-none"}`}
       role="presentation"
       aria-hidden={!open}
-      inert={!open ? "" : undefined}
+      inert={!open ? true : undefined}
     >
       <button
         ref={overlayRef}

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { BrainCircuit, Folder, Loader2, Plus, Search, AlertCircle, ArrowUpDown } from "lucide-react"
+import gsap from "gsap"
+import { useGSAP } from "@gsap/react"
 import { useDecks } from "../hooks/use-decks"
 import { useDataRefresh } from "../hooks/use-data-refresh"
 import { deckService } from "../lib/container"
@@ -13,6 +15,8 @@ import type { Card, CardResult } from "../domain/models/card"
 import { cardService } from "../lib/container"
 import type { Deck } from "../domain/models/deck"
 
+gsap.registerPlugin(useGSAP)
+
 type DeckSort = "recent" | "name"
 
 export function DecksPage() {
@@ -20,6 +24,7 @@ export function DecksPage() {
   const navigate = useNavigate()
   const { refreshKey } = useDataRefresh()
   const didMountRef = useRef(false)
+  const quickStudyRef = useRef<HTMLDivElement>(null)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: "", description: "" })
   const [creating, setCreating] = useState(false)
@@ -31,6 +36,7 @@ export function DecksPage() {
   // Global study state
   const [globalCards, setGlobalCards] = useState<Card[]>([])
   const [globalDueCards, setGlobalDueCards] = useState<Card[]>([])
+  const [loadingGlobalCards, setLoadingGlobalCards] = useState(true)
   const [studyType, setStudyType] = useState<"srs" | "free" | null>(null)
 
   // Reload data when refresh is triggered (e.g., after import)
@@ -44,12 +50,17 @@ export function DecksPage() {
 
   // Load global cards
   const loadGlobalCards = async () => {
-    const [all, due] = await Promise.all([
-      cardService.getAll(),
-      cardService.getStudyCards()
-    ])
-    setGlobalCards(all)
-    setGlobalDueCards(due)
+    setLoadingGlobalCards(true)
+    try {
+      const [all, due] = await Promise.all([
+        cardService.getAll(),
+        cardService.getStudyCards()
+      ])
+      setGlobalCards(all)
+      setGlobalDueCards(due)
+    } finally {
+      setLoadingGlobalCards(false)
+    }
   }
 
   useEffect(() => {
@@ -127,6 +138,25 @@ export function DecksPage() {
       return b.updatedAt.localeCompare(a.updatedAt)
     })
 
+  useGSAP(() => {
+    if (!quickStudyRef.current) return
+
+    gsap.fromTo(
+      quickStudyRef.current,
+      { autoAlpha: 0, y: -8, scale: 0.985 },
+      { autoAlpha: 1, y: 0, scale: 1, duration: 0.34, ease: "power3.out", overwrite: "auto" }
+    )
+
+    gsap.fromTo(
+      ".quick-study-content",
+      { autoAlpha: 0, y: 6 },
+      { autoAlpha: 1, y: 0, duration: 0.24, stagger: 0.05, ease: "power2.out", delay: 0.08 }
+    )
+  }, {
+    scope: quickStudyRef,
+    dependencies: [loadingGlobalCards, globalCards.length, globalDueCards.length],
+  })
+
   if (studyType) {
     return (
       <StudySession
@@ -148,28 +178,35 @@ export function DecksPage() {
           onButtonClick={() => setShowForm(true)}
           buttonId="create-deck-btn"
         />
-        {(globalCards.length > 0 || globalDueCards.length > 0) && (
-          <div className="card-miro p-3 sm:p-4">
+        {(loadingGlobalCards || globalCards.length > 0 || globalDueCards.length > 0) && (
+          <div ref={quickStudyRef} className="card-miro p-3 sm:p-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#888c9e] mb-2">Quick Study</p>
-            <div className="flex flex-wrap items-center gap-2">
-            {globalCards.length > 0 && (
-              <button
-                onClick={() => setStudyType("free")}
-                className="btn-secondary flex items-center gap-2 text-sm whitespace-nowrap"
-              >
-                Free Mode
-              </button>
+            {loadingGlobalCards ? (
+              <div className="quick-study-content flex items-center gap-2 rounded-xl border border-[#e9eaef] bg-white px-3 py-2 text-sm text-[#555a6a]">
+                <Loader2 className="h-4 w-4 animate-spin text-[#5b76fe]" />
+                Loading study options...
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                {globalCards.length > 0 && (
+                  <button
+                    onClick={() => setStudyType("free")}
+                    className="quick-study-content btn-secondary flex items-center gap-2 text-sm whitespace-nowrap"
+                  >
+                    Free Mode
+                  </button>
+                )}
+                {globalDueCards.length > 0 && (
+                  <button
+                    onClick={() => setStudyType("srs")}
+                    className="quick-study-content btn-primary flex items-center gap-2 text-sm whitespace-nowrap"
+                  >
+                    <BrainCircuit className="w-4 h-4 shrink-0" />
+                    Global Study ({globalDueCards.length})
+                  </button>
+                )}
+              </div>
             )}
-            {globalDueCards.length > 0 && (
-              <button
-                onClick={() => setStudyType("srs")}
-                className="btn-primary flex items-center gap-2 text-sm whitespace-nowrap"
-              >
-                <BrainCircuit className="w-4 h-4 shrink-0" />
-                Global Study ({globalDueCards.length})
-              </button>
-            )}
-            </div>
           </div>
         )}
       </div>
