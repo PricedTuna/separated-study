@@ -141,6 +141,20 @@
   line-height: 1.6 !important;
 }
 
+.selection-menu-button {
+  position: absolute;
+  z-index: 80;
+  border: 1px solid #d9dce5;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #1c1c1e;
+  box-shadow: 0 14px 34px rgba(28, 28, 30, 0.16);
+  padding: 0.5rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 .milkdown-editor {
   background: #ffffff;
 }

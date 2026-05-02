@@ -12,11 +12,10 @@ import type { Deck } from "../domain/models/deck"
 import type { Card, CardResult } from "../domain/models/card"
 import type { Document } from "../domain/models/document"
 import { BackButton } from "../components/ui/back-button"
-import { Dialog } from "../components/ui/dialog"
+import { CardFormDialog, type CardFormValues } from "../components/cards/card-form-dialog"
 import { StudySession } from "../components/study/study-session"
 
-type FormState = { front: string; back: string; documentId: string }
-const EMPTY: FormState = { front: "", back: "", documentId: "" }
+const EMPTY: CardFormValues = { front: "", back: "", deckId: "", documentId: "" }
 type CardFilter = "all" | "due" | "new" | "learning"
 type CardSort = "recent" | "front"
 type CardsView = "grid" | "list"
@@ -32,7 +31,7 @@ export function DeckDetailPage() {
   const [loading, setLoading] = useState(true)
 
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState<FormState>(EMPTY)
+  const [form, setForm] = useState<CardFormValues>(EMPTY)
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [flipped, setFlipped] = useState<Record<string, boolean>>({})
@@ -80,24 +79,23 @@ export function DeckDetailPage() {
     }
   }, [refreshKey, load])
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleCreate(values: CardFormValues) {
     if (!id) return
     setError(null)
     setCreating(true)
     try {
       if (editingCardId) {
         await cardService.update(editingCardId, {
-          front: form.front,
-          back: form.back,
-          documentId: form.documentId || null,
+          front: values.front,
+          back: values.back,
+          documentId: values.documentId || null,
         })
       } else {
         await cardService.create({
-          front: form.front,
-          back: form.back,
-          deckId: id,
-          documentId: form.documentId || null,
+          front: values.front,
+          back: values.back,
+          deckId: values.deckId || id,
+          documentId: values.documentId || null,
         })
       }
       setForm(EMPTY)
@@ -195,6 +193,7 @@ export function DeckDetailPage() {
     setForm({
       front: card.front,
       back: card.back,
+      deckId: card.deckId,
       documentId: card.documentId ?? "",
     })
     setShowForm(true)
@@ -266,7 +265,11 @@ export function DeckDetailPage() {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => {
+              setEditingCardId(null)
+              setForm({ ...EMPTY, deckId: id ?? "" })
+              setShowForm(true)
+            }}
             className="btn-primary flex items-center gap-1.5 text-sm whitespace-nowrap shrink-0"
           >
             <Plus className="w-4 h-4 shrink-0" />
@@ -354,84 +357,24 @@ export function DeckDetailPage() {
         </div>
       )}
 
-      <Dialog
+      <CardFormDialog
         open={showForm}
         onOpenChange={(open) => {
           if (!open) closeForm()
           else setShowForm(true)
         }}
         onExited={handleExited}
+        mode={editingCardId ? "edit" : "create"}
+        decks={deck ? [deck] : []}
+        documents={documents}
+        initialValues={editingCardId ? form : { ...form, deckId: form.deckId || id || "" }}
+        loading={creating}
+        error={error}
         title={editingCardId ? "Edit flashcard" : "New flashcard"}
-        description={editingCardId ? "Update this card." : "Create a card for this deck and optionally link it to a document."}
-        size="lg"
-      >
-        <form onSubmit={handleCreate} className="space-y-5">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-1.5">
-              <label htmlFor="card-front-input" className="text-xs font-medium text-[#555a6a]">Front</label>
-              <textarea
-                id="card-front-input"
-                autoFocus
-                value={form.front}
-                onChange={(e) => setForm((p) => ({ ...p, front: e.target.value }))}
-                placeholder="Question or concept..."
-                rows={4}
-                className="input-miro w-full text-sm resize-none"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="card-back-input" className="text-xs font-medium text-[#555a6a]">Back</label>
-              <textarea
-                id="card-back-input"
-                value={form.back}
-                onChange={(e) => setForm((p) => ({ ...p, back: e.target.value }))}
-                placeholder="Answer or definition..."
-                rows={4}
-                className="input-miro w-full text-sm resize-none"
-              />
-            </div>
-          </div>
-
-          {documents.length > 0 && (
-            <div className="space-y-1.5">
-              <label htmlFor="card-document-select" className="text-xs font-medium text-[#555a6a]">
-                Link to document <span className="text-[#a5a8b5] font-normal">(optional)</span>
-              </label>
-              <select
-                id="card-document-select"
-                value={form.documentId}
-                onChange={(e) => setForm((p) => ({ ...p, documentId: e.target.value }))}
-                className="input-miro w-full text-sm appearance-none"
-              >
-                <option value="">— None —</option>
-                {documents.map((d) => (
-                  <option key={d.id} value={d.id}>{d.title}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {error && <p className="text-red-500 text-xs">{error}</p>}
-
-          <div className="flex gap-2 justify-end">
-            <button
-              type="button"
-              onClick={closeForm}
-              className="btn-secondary text-sm"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!form.front.trim() || !form.back.trim() || creating}
-              className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              {editingCardId ? "Save changes" : "Add Card"}
-            </button>
-          </div>
-        </form>
-      </Dialog>
+        description={editingCardId ? "Update this card." : "Create a card for this deck or link it to a document."}
+        submitLabel={editingCardId ? "Save changes" : "Add Card"}
+        onSubmit={handleCreate}
+      />
 
       {/* Cards grid */}
       {cards.length === 0 ? (

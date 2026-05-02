@@ -12,6 +12,7 @@ import { DeckDetailPage } from "./pages/deck-detail"
 import { DataRefreshProvider } from "./hooks/use-data-refresh"
 import { supabase } from "./lib/supabase-client"
 import { Loader2 } from "lucide-react"
+import { GlobalFormAnimations } from "./components/ui/global-form-animations"
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
@@ -50,6 +51,7 @@ function App() {
   return (
     <DataRefreshProvider>
       <BrowserRouter>
+        <GlobalFormAnimations />
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
