@@ -1,20 +1,16 @@
 import { useState, useEffect, useRef, useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { Folder, FileText, Clock, Loader2, Plus, ChevronDown } from "lucide-react"
-import gsap from "gsap"
-import { useGSAP } from "@gsap/react"
-
-gsap.registerPlugin(useGSAP)
+import { Folder, FileText, Clock } from "lucide-react"
 import { useDocuments } from "../hooks/use-documents"
 import { useFolders } from "../hooks/use-folders"
 import { useDataRefresh } from "../hooks/use-data-refresh"
 import { documentService, folderService } from "../lib/container"
-import type { CreateDocumentInput } from "../domain/models/document"
-import type { CreateFolderInput } from "../domain/models/folder"
 import { PageHeader, EmptyState, LoadingState, PageContainer } from "../components/ui/page"
-import { Dialog } from "../components/ui/dialog"
 import { ListItem } from "../components/ui/list-item"
 import { BackButton } from "../components/ui/back-button"
+import { DocumentFormDialog } from "../components/documents/document-form-dialog"
+import { FolderFormDialog } from "../components/documents/folder-form-dialog"
+import { NewItemDropdown } from "../components/documents/new-item-dropdown"
 
 export function DocumentsPage() {
   const { documents, loading: docsLoading, create: createDoc, reload: reloadDocs } = useDocuments()
@@ -26,46 +22,6 @@ export function DocumentsPage() {
 
   const [showDocForm, setShowDocForm] = useState(false)
   const [showFolderForm, setShowFolderForm] = useState(false)
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
-
-  useGSAP(() => {
-    if (dropdownOpen) {
-      gsap.to(menuRef.current, {
-        autoAlpha: 1,
-        y: 0,
-        scale: 1,
-        duration: 0.2,
-        ease: "power2.out",
-        pointerEvents: "auto"
-      })
-    } else {
-      gsap.to(menuRef.current, {
-        autoAlpha: 0,
-        y: -10,
-        scale: 0.95,
-        duration: 0.15,
-        ease: "power2.in",
-        pointerEvents: "none"
-      })
-    }
-  }, { dependencies: [dropdownOpen], scope: dropdownRef })
-  
-  const [title, setTitle] = useState("")
-  const [folderName, setFolderName] = useState("")
-  const [creating, setCreating] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
 
   // Filter documents and folders based on current folder context
   const currentFolder = useMemo(() => {
@@ -113,72 +69,12 @@ export function DocumentsPage() {
     ? rootFolders.length > 0 || docsWithoutFolder.length > 0
     : subfolders.length > 0 || docsInFolder.length > 0
 
-  async function handleCreateDocument(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
-    setCreating(true)
-    try {
-      const input: CreateDocumentInput = {
-        title,
-        content: `# ${title}\n\n`,
-        folderId: folderId || null,
-      }
-      const doc = await createDoc(input)
-      setTitle("")
-      setShowDocForm(false)
-      if (folderId) {
-        navigate(`/dashboard/folders/${folderId}/${doc.id}`)
-      } else {
-        navigate(`/dashboard/documents/${doc.id}`)
-      }
-    } catch (err) {
-      setError((err as Error).message)
-    } finally {
-      setCreating(false)
-    }
-  }
-
-  async function handleCreateFolder(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
-    setCreating(true)
-    try {
-      const input: CreateFolderInput = {
-        name: folderName,
-        parentId: folderId || null,
-      }
-      const folder = await createFolder(input)
-      setFolderName("")
-      setShowFolderForm(false)
-      if (folderId) {
-        navigate(`/dashboard/folders/${folderId}`)
-      } else {
-        navigate(`/dashboard/folders/${folder.id}`)
-      }
-    } catch (err) {
-      setError((err as Error).message)
-    } finally {
-      setCreating(false)
-    }
-  }
-
   function handleDeleteDoc(id: string) {
     documentService.delete(id).then(() => reloadDocs())
   }
 
   function handleDeleteFolder(id: string) {
     folderService.delete(id).then(() => reloadFolders())
-  }
-
-  function handleCancel() {
-    setShowDocForm(false)
-    setShowFolderForm(false)
-  }
-
-  function handleExited() {
-    setTitle("")
-    setFolderName("")
-    setError(null)
   }
 
   function formatDate(iso: string) {
@@ -210,129 +106,42 @@ export function DocumentsPage() {
           ) : undefined
         }
         extraButtons={
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="btn-primary flex items-center gap-2 text-sm whitespace-nowrap shrink-0"
-            >
-              <span>New...</span>
-              <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-            <div 
-              ref={menuRef}
-              className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-[#e9eaef] py-1.5 z-50 overflow-hidden"
-              style={{ opacity: 0, visibility: 'hidden' }}
-            >
-              <button
-                onClick={() => { setShowDocForm(true); setDropdownOpen(false) }}
-                className="w-full text-left px-4 py-2.5 text-sm font-medium text-[#1c1c1e] hover:bg-[#f0f1f5] flex items-center gap-2.5 transition-colors"
-              >
-                <FileText className="w-4 h-4 text-[#5b76fe]" />
-                Document
-              </button>
-              <button
-                onClick={() => { setShowFolderForm(true); setDropdownOpen(false) }}
-                className="w-full text-left px-4 py-2.5 text-sm font-medium text-[#1c1c1e] hover:bg-[#f0f1f5] flex items-center gap-2.5 transition-colors"
-              >
-                <Folder className="w-4 h-4 text-[#f57c00]" />
-                Folder
-              </button>
-            </div>
-          </div>
+          <NewItemDropdown
+            onNewDocument={() => setShowDocForm(true)}
+            onNewFolder={() => setShowFolderForm(true)}
+          />
         }
       />
 
-      {/* New Document Dialog */}
-      <Dialog
+      <DocumentFormDialog
         open={showDocForm}
-        onOpenChange={(open) => {
-          if (!open) handleCancel()
-          else setShowDocForm(true)
+        onOpenChange={setShowDocForm}
+        onSubmit={createDoc}
+        onSuccess={(doc) => {
+          if (folderId) {
+            navigate(`/dashboard/folders/${folderId}/${doc.id}`)
+          } else {
+            navigate(`/dashboard/documents/${doc.id}`)
+          }
         }}
-        onExited={handleExited}
-        title="New document"
-        description="Create a document to organize notes and study material."
-        size="md"
-      >
-        <form onSubmit={handleCreateDocument} className="space-y-5">
-          <div className="space-y-1.5">
-            <label htmlFor="document-title-input" className="text-xs font-medium text-[#555a6a]">
-              Title
-            </label>
-            <input
-              id="document-title-input"
-              autoFocus
-              type="text"
-              placeholder="Document title..."
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="input-miro w-full text-sm"
-            />
-          </div>
+        onCancel={() => setShowDocForm(false)}
+        folderId={folderId}
+      />
 
-          {error && <p className="text-red-500 text-xs">{error}</p>}
-
-          <div className="flex gap-2 justify-end">
-            <button type="button" onClick={handleCancel} className="btn-secondary text-sm">
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!title.trim() || creating}
-              className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Create
-            </button>
-          </div>
-        </form>
-      </Dialog>
-
-      {/* New Folder Dialog */}
-      <Dialog
+      <FolderFormDialog
         open={showFolderForm}
-        onOpenChange={(open) => {
-          if (!open) handleCancel()
-          else setShowFolderForm(true)
+        onOpenChange={setShowFolderForm}
+        onSubmit={createFolder}
+        onSuccess={(folder) => {
+          if (folderId) {
+            navigate(`/dashboard/folders/${folderId}`)
+          } else {
+            navigate(`/dashboard/folders/${folder.id}`)
+          }
         }}
-        onExited={handleExited}
-        title="New folder"
-        description="Create a folder to organize your documents."
-        size="md"
-      >
-        <form onSubmit={handleCreateFolder} className="space-y-5">
-          <div className="space-y-1.5">
-            <label htmlFor="folder-name-input" className="text-xs font-medium text-[#555a6a]">
-              Name
-            </label>
-            <input
-              id="folder-name-input"
-              autoFocus
-              type="text"
-              placeholder="Folder name..."
-              value={folderName}
-              onChange={(e) => setFolderName(e.target.value)}
-              className="input-miro w-full text-sm"
-            />
-          </div>
-
-          {error && <p className="text-red-500 text-xs">{error}</p>}
-
-          <div className="flex gap-2 justify-end">
-            <button type="button" onClick={handleCancel} className="btn-secondary text-sm">
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!folderName.trim() || creating}
-              className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Create folder
-            </button>
-          </div>
-        </form>
-      </Dialog>
+        onCancel={() => setShowFolderForm(false)}
+        parentId={folderId}
+      />
 
       {loading ? (
         <LoadingState />
