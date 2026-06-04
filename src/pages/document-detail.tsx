@@ -30,6 +30,10 @@ export function DocumentDetailPage() {
   const [cardError, setCardError] = useState<string | null>(null)
   const [creatingCard, setCreatingCard] = useState(false)
 
+  const handleEditorChange = useCallback((markdown: string) => {
+    contentRef.current = markdown
+  }, [])
+
   const load = useCallback(async () => {
     if (!id) return
     const [found, decksData] = await Promise.all([
@@ -176,7 +180,7 @@ export function DocumentDetailPage() {
         <div className="document-editor">
           <MilkdownEditor
             defaultValue={content}
-            onChange={(markdown) => contentRef.current = markdown}
+            onChange={handleEditorChange}
             onAddCard={openCardDialog}
           />
         </div>

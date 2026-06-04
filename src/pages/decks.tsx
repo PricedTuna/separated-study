@@ -12,6 +12,7 @@ import { ListItem } from "../components/ui/list-item"
 import { StudySession } from "../components/study/study-session"
 import type { CreateDeckInput } from "../domain/models/deck"
 import type { Card, CardResult } from "../domain/models/card"
+import type { CardReview } from "../domain/models/card-review"
 import { cardService } from "../lib/container"
 import type { Deck } from "../domain/models/deck"
 
@@ -35,7 +36,7 @@ export function DecksPage() {
 
   // Global study state
   const [globalCards, setGlobalCards] = useState<Card[]>([])
-  const [globalDueCards, setGlobalDueCards] = useState<Card[]>([])
+  const [globalDueCards, setGlobalDueCards] = useState<(Card & { review?: CardReview | null })[]>([])
   const [loadingGlobalCards, setLoadingGlobalCards] = useState(true)
   const [studyType, setStudyType] = useState<"srs" | "free" | null>(null)
 

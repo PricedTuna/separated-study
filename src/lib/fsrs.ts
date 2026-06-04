@@ -112,6 +112,37 @@ export function calculateFSRS(
 }
 
 /**
+ * Computes a human-readable "time to reappear" string (like Anki)
+ * for a given result based on the current FSRS params.
+ */
+export function getNextIntervalString(
+  current: FSRSParams,
+  result: CardResult,
+  now: Date = new Date()
+): string {
+  const next = calculateFSRS(current, result, now)
+  const diffMs = new Date(next.due).getTime() - now.getTime()
+
+  if (diffMs < 60 * 60 * 1000) {
+    const minutes = Math.max(1, Math.round(diffMs / (60 * 1000)))
+    return `${minutes} min`
+  }
+
+  if (diffMs < 24 * 60 * 60 * 1000) {
+    const hours = Math.round(diffMs / (60 * 60 * 1000))
+    return `${hours} hr`
+  }
+
+  const days = Math.round(diffMs / (24 * 60 * 60 * 1000))
+  if (days < 30) {
+    return `${days} day${days > 1 ? "s" : ""}`
+  }
+
+  const months = Math.round(days / 30)
+  return `${months} mo`
+}
+
+/**
  * Convierte un CardReview a FSRSParams para usar con calculateFSRS
  */
 export function toFSRSParams(review: CardReview): FSRSParams {

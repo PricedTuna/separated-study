@@ -1,13 +1,15 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { ArrowLeft, BrainCircuit, X, Check, Shuffle, RotateCcw, Keyboard } from "lucide-react"
 import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
 import type { Card, CardResult } from "../../domain/models/card"
+import type { CardReview } from "../../domain/models/card-review"
+import { DEFAULT_FSRS_PARAMS, getNextIntervalString, toFSRSParams } from "../../lib/fsrs"
 
 gsap.registerPlugin(useGSAP)
 
 interface StudySessionProps {
-  initialCards: Card[]
+  initialCards: (Card & { review?: CardReview | null })[]
   mode: "srs" | "free"
   onResult: (cardId: string, result: CardResult) => Promise<void>
   onExit: () => void
@@ -15,7 +17,8 @@ interface StudySessionProps {
 type ResultStatKey = Exclude<CardResult, "unseen">
 
 export function StudySession({ initialCards, mode, onResult, onExit }: StudySessionProps) {
-  const [cards, setCards] = useState<Card[]>([])
+  type StudyCard = Card & { review?: CardReview | null }
+  const [cards, setCards] = useState<StudyCard[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [sessionTotal, setSessionTotal] = useState(0)
@@ -72,6 +75,16 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
     ? Math.min(sessionTotal, sessionTotal - cards.length + 1)
     : currentIndex + 1
 
+  const intervalLabels = useMemo(() => {
+    if (!activeCard || mode !== "srs") return null
+    const params = activeCard.review ? toFSRSParams(activeCard.review) : DEFAULT_FSRS_PARAMS
+    return {
+      again: getNextIntervalString(params, "again"),
+      hard: getNextIntervalString(params, "hard"),
+      good: getNextIntervalString(params, "good"),
+      easy: getNextIntervalString(params, "easy"),
+    }
+  }, [activeCard, mode])
 
   // Animations
   useGSAP(() => {
@@ -326,7 +339,7 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
                       className="opacity-0 flex flex-col items-center justify-center gap-1.5 py-5 px-2 rounded-[24px] bg-white hover:bg-red-50 text-red-600 transition-colors shadow-sm border border-[#e9eaef] hover:border-red-200 active:scale-95 disabled:opacity-50"
                     >
                       <span className="font-bold text-lg">Again</span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Soon</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">{intervalLabels?.again ?? "Soon"}</span>
                     </button>
                     <button
                       onClick={() => handleAction("hard")}
@@ -334,7 +347,7 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
                       className="opacity-0 flex flex-col items-center justify-center gap-1.5 py-5 px-2 rounded-[24px] bg-white hover:bg-orange-50 text-orange-600 transition-colors shadow-sm border border-[#e9eaef] hover:border-orange-200 active:scale-95 disabled:opacity-50"
                     >
                       <span className="font-bold text-lg">Hard</span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Short</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">{intervalLabels?.hard ?? "Short"}</span>
                     </button>
                     <button
                       onClick={() => handleAction("good")}
@@ -342,7 +355,7 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
                       className="opacity-0 flex flex-col items-center justify-center gap-1.5 py-5 px-2 rounded-[24px] bg-white hover:bg-green-50 text-green-600 transition-colors shadow-sm border border-[#e9eaef] hover:border-green-200 active:scale-95 disabled:opacity-50"
                     >
                       <span className="font-bold text-lg">Good</span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Normal</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">{intervalLabels?.good ?? "Normal"}</span>
                     </button>
                     <button
                       onClick={() => handleAction("easy")}
@@ -350,7 +363,7 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
                       className="opacity-0 flex flex-col items-center justify-center gap-1.5 py-5 px-2 rounded-[24px] bg-white hover:bg-blue-50 text-blue-600 transition-colors shadow-sm border border-[#e9eaef] hover:border-blue-200 active:scale-95 disabled:opacity-50"
                     >
                       <span className="font-bold text-lg">Easy</span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Long</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">{intervalLabels?.easy ?? "Long"}</span>
                     </button>
                   </div>
                 )}

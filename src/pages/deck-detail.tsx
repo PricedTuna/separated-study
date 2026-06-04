@@ -10,6 +10,7 @@ import { useDataRefresh } from "../hooks/use-data-refresh"
 import { confirmDelete } from "../lib/swal"
 import type { Deck } from "../domain/models/deck"
 import type { Card, CardResult } from "../domain/models/card"
+import type { CardReview } from "../domain/models/card-review"
 import type { Document } from "../domain/models/document"
 import { BackButton } from "../components/ui/back-button"
 import { CardFormDialog, type CardFormValues } from "../components/cards/card-form-dialog"
@@ -26,7 +27,7 @@ export function DeckDetailPage() {
   const { refreshKey } = useDataRefresh()
   const [deck, setDeck] = useState<Deck | null>(null)
   const [cards, setCards] = useState<Card[]>([])
-  const [dueCards, setDueCards] = useState<Card[]>([])
+  const [dueCards, setDueCards] = useState<(Card & { review?: CardReview | null })[]>([])
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
 

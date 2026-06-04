@@ -1,6 +1,7 @@
 import type { ICardRepository } from "../domain/repositories/card-repository"
 import type { ICardReviewRepository } from "../domain/repositories/card-review-repository"
 import type { Card, CreateCardInput, UpdateCardInput, CardResult } from "../domain/models/card"
+import type { CardReview } from "../domain/models/card-review"
 import { DEFAULT_FSRS_PARAMS, calculateFSRS, toFSRSParams } from "../lib/fsrs"
 
 /**
@@ -30,14 +31,14 @@ export class CardService {
     return this.cardRepo.findByDocumentId(documentId)
   }
 
-  async getStudyCards(deckId?: string): Promise<Card[]> {
+  async getStudyCards(deckId?: string): Promise<(Card & { review: CardReview | null })[]> {
     const cards = deckId ? await this.cardRepo.findByDeckId(deckId) : await this.cardRepo.findAll()
     const now = new Date().getTime()
     
     const cardsWithReviews = await Promise.all(
       cards.map(async (card) => {
         const review = await this.reviewRepo.findByCardId(card.id).catch(() => null)
-        return { card, review }
+        return { ...card, review }
       })
     )
 
@@ -48,7 +49,6 @@ export class CardService {
         const dueB = b.review ? new Date(b.review.due).getTime() : 0
         return dueA - dueB
       })
-      .map(({ card }) => card)
   }
 
   create(input: CreateCardInput): Promise<Card> {
