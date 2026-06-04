@@ -26,7 +26,7 @@ export const PageHeader: FC<PageHeaderProps> = ({
       <div className="min-w-0 flex-1">
         <h1
           className="text-[28px] font-medium text-[#1c1c1e] leading-[1.15] tracking-[-0.72px] truncate"
-          style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
+          style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
         >
           {title}
         </h1>
@@ -71,7 +71,7 @@ export const EmptyState: FC<EmptyStateProps> = ({
     <div className="text-center">
       <p
         className="text-[#1c1c1e] font-medium text-lg"
-        style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
+        style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
       >
         {title}
       </p>

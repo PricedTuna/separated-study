@@ -71,7 +71,7 @@ export function DocumentDetailPage() {
     setSaving(true)
     setError(null)
     try {
-      const updated = await documentService.update(doc.id, { title: title.trim() || doc.title, content: contentRef.current })
+      const updated = await documentService.update(doc.id, { title: title.trim() || doc.title, content: contentRef.current, folderId: doc.folderId })
       if (updated) {
         setDoc(updated)
         setTitle(updated.title)

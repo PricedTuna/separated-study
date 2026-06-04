@@ -45,7 +45,7 @@ export function LoginPage() {
           </div>
           <span
             className="text-[#1c1c1e] text-[15px] font-medium"
-            style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
+            style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
           >
             Spaced Study
           </span>
@@ -54,7 +54,7 @@ export function LoginPage() {
         <div className="space-y-4">
           <p
             className="text-[40px] font-medium text-[#1c1c1e] leading-[1.15] tracking[-1.2px]"
-            style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
+            style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
           >
             Think it.<br />Learn it.<br />Remember it.
           </p>
@@ -74,7 +74,7 @@ export function LoginPage() {
             <div className="w-6 h-6 rounded bg-[#5b76fe] flex items-center justify-center">
               <Brain className="w-4 h-4 text-white" strokeWidth={2.5} />
             </div>
-            <span className="text-[#1c1c1e] text-[15px] font-medium" style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}>
+            <span className="text-[#1c1c1e] text-[15px] font-medium" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
               Spaced Study
             </span>
           </div>
@@ -82,7 +82,7 @@ export function LoginPage() {
           <div>
             <h1
               className="text-[28px] font-medium text-[#1c1c1e] leading-[1.15] tracking[-0.72px]"
-              style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
+              style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
             >
               Welcome back
             </h1>

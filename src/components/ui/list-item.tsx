@@ -72,7 +72,7 @@ export const ListItem: FC<ListItemProps> = ({
       <div className="flex-1 min-w-0">
         <p
           className="text-[#1c1c1e] font-medium text-[15px] truncate"
-          style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
+          style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
         >
           {title}
         </p>

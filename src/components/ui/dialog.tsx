@@ -234,7 +234,7 @@ export const Dialog: FC<DialogProps> = ({
             <h2
               id="dialog-title"
               className="text-[22px] font-medium text-[#1c1c1e] leading-[1.15] tracking-[-0.44px]"
-              style={{ fontFamily: "'Roobert PRO Medium', system-ui, sans-serif" }}
+              style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
             >
               {title}
             </h2>
