@@ -3,7 +3,7 @@ import { useEffect, useState } from "react"
 import { LandingPage } from "./pages/landing"
 import { LoginPage } from "./pages/login"
 import { SignupPage } from "./pages/signup"
-import { DashboardLayout } from "./components/layouts/dashboard-layout"
+import { DashboardLayout } from "./components/layouts/DashboardLayout"
 import { DashboardPage } from "./pages/dashboard"
 import { DocumentsPage } from "./pages/documents"
 import { DocumentDetailPage } from "./pages/document-detail"
@@ -12,7 +12,7 @@ import { DeckDetailPage } from "./pages/deck-detail"
 import { DataRefreshProvider } from "./hooks/use-data-refresh"
 import { supabase } from "./lib/supabase-client"
 import { Loader2 } from "lucide-react"
-import { GlobalFormAnimations } from "./components/ui/global-form-animations"
+import { GlobalFormAnimations } from "./components/ui/GlobalFormAnimations"
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)

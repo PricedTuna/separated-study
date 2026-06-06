@@ -4,20 +4,22 @@ import { Download, Upload, FileJson, Loader2, Folder, FileText, Menu, Layers, Ch
 import type { User } from "@supabase/supabase-js"
 import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
-import { Sidebar, type SidebarSection, type SidebarItem } from "../ui/sidebar"
+import { Sidebar } from "@/components/ui/Sidebar"
+import type { SidebarSectionData } from "@/components/ui/SidebarSection"
+import type { SidebarItemData } from "@/components/ui/SidebarItem"
 
 gsap.registerPlugin(useGSAP)
 
-import { Breadcrumb, type BreadcrumbItem } from "../ui/breadcrumb"
-import { Checkbox } from "../ui/checkbox"
-import { Dialog } from "../ui/dialog"
-import { useDataRefresh } from "../../hooks/use-data-refresh"
-import { useFolders } from "../../hooks/use-folders"
-import { useDocuments } from "../../hooks/use-documents"
-import { useDecks } from "../../hooks/use-decks"
-import { exportAllData, importData, downloadAsFile, parseImportFile, validateImportData } from "../../services/import-export-service"
-import { supabase } from "../../lib/supabase-client"
-import { clearAllCache } from "../../lib/cache"
+import { Breadcrumb, type BreadcrumbItem } from "@/components/ui/Breadcrumb"
+import { Checkbox } from "@/components/ui/Checkbox"
+import { Dialog } from "@/components/ui/Dialog"
+import { useDataRefresh } from "@/hooks/use-data-refresh"
+import { useFolders } from "@/hooks/use-folders"
+import { useDocuments } from "@/hooks/use-documents"
+import { useDecks } from "@/hooks/use-decks"
+import { exportAllData, importData, downloadAsFile, parseImportFile, validateImportData } from "@/services/import-export-service"
+import { supabase } from "@/lib/supabase-client"
+import { clearAllCache } from "@/lib/cache"
 
 const mainNavItems = [
   {
@@ -42,7 +44,7 @@ const mainNavItems = [
   },
 ]
 
-export function DashboardLayout() {
+export const DashboardLayout = () => {
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -95,7 +97,6 @@ export function DashboardLayout() {
     return () => window.removeEventListener("pointerdown", handlePointerDown)
   }, [isUserMenuOpen])
 
-  // Determine active section based on path
   const activeSection = useMemo(() => {
     const path = location.pathname
     if (path.startsWith("/dashboard/folders/")) {
@@ -109,25 +110,22 @@ export function DashboardLayout() {
 
   const activeLabel = mainNavItems.find((i) => i.id === activeSection)?.label ?? "Documents"
 
-  // Extract folder ID from URL if in a folder
   const folderIdFromUrl = useMemo(() => {
     const path = location.pathname
     const match = path.match(/^\/dashboard\/folders\/([^/]+)/)
     return match ? match[1] : null
   }, [location.pathname])
 
-  // Build breadcrumb path for current folder (including all ancestors)
-  // Protected against infinite loops from circular parent references
   const breadcrumbItems = useMemo((): BreadcrumbItem[] => {
     if (!folderIdFromUrl) return []
 
     const path: BreadcrumbItem[] = []
     const visited = new Set<string>()
     let currentId: string | null = folderIdFromUrl
-    const maxDepth = 20 // Prevent infinite loops
+    const maxDepth = 20
 
     for (let i = 0; i < maxDepth && currentId; i++) {
-      if (visited.has(currentId)) break // Cycle detected
+      if (visited.has(currentId)) break
       visited.add(currentId)
 
       const folder = folders.find(f => f.id === currentId)
@@ -140,9 +138,8 @@ export function DashboardLayout() {
     return path
   }, [folderIdFromUrl, folders])
 
-  // Build sidebar sections
-  const sidebarSections = useMemo((): SidebarSection[] => {
-    const buildFolderTree = (parentId: string | null): SidebarItem[] => {
+  const sidebarSections = useMemo((): SidebarSectionData[] => {
+    const buildFolderTree = (parentId: string | null): SidebarItemData[] => {
       const childFolders = folders
         .filter(f => f.parentId === parentId)
         .map(folder => ({
@@ -163,7 +160,7 @@ export function DashboardLayout() {
       return [...childFolders, ...childDocs]
     }
 
-    const sections: SidebarSection[] = [
+    const sections: SidebarSectionData[] = [
       {
         title: "Workspace",
         items: mainNavItems.map((item) => ({
@@ -185,7 +182,6 @@ export function DashboardLayout() {
   }, [folders, documents, activeSection])
 
   const handleSidebarItemClick = (id: string) => {
-    // Check Documents/Decks links
     const mainItem = mainNavItems.find((item) => item.id === id)
     if (mainItem) {
       navigate(mainItem.path)
@@ -193,7 +189,6 @@ export function DashboardLayout() {
       return
     }
 
-    // Check folders
     if (id.startsWith("folder-")) {
       const folderId = id.replace("folder-", "")
       navigate(`/dashboard/folders/${folderId}`)
@@ -201,7 +196,6 @@ export function DashboardLayout() {
       return
     }
 
-    // Check documents
     if (id.startsWith("doc-")) {
       const docId = id.replace("doc-", "")
       navigate(`/dashboard/documents/${docId}`)
@@ -437,7 +431,7 @@ export function DashboardLayout() {
 
   useGSAP(() => {
     const mm = gsap.matchMedia()
-    
+
     mm.add("(max-width: 1023px)", () => {
       if (isSidebarOpen) {
         gsap.to(backdropRef.current, { autoAlpha: 1, duration: 0.3, ease: "power2.out" })
@@ -531,7 +525,7 @@ export function DashboardLayout() {
         onClick={() => setIsSidebarOpen(false)}
       />
 
-      <div 
+      <div
         ref={sidebarRef}
         className="fixed inset-y-0 left-0 z-40 w-72 -translate-x-full lg:sticky lg:top-0 lg:z-auto lg:h-[100dvh] lg:translate-x-0"
       >
@@ -542,9 +536,7 @@ export function DashboardLayout() {
         />
       </div>
 
-      {/* Main content */}
       <main className="flex h-[100dvh] min-w-0 flex-1 flex-col overflow-hidden">
-        {/* Top bar */}
         <header className="sticky top-0 z-20 flex min-h-14 items-center justify-between gap-3 border-b border-[#e9eaef] bg-white/90 px-3 backdrop-blur sm:px-4">
           <div className="flex min-w-0 items-center gap-2">
             <button
@@ -564,7 +556,6 @@ export function DashboardLayout() {
             )}
           </div>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-            {/* Export button */}
             <button
               onClick={handleExportClick}
               disabled={isExporting}
@@ -579,7 +570,6 @@ export function DashboardLayout() {
               <span className="hidden sm:inline">Export</span>
             </button>
 
-            {/* Import button */}
             <button
               onClick={handleImportClick}
               disabled={isImporting}
@@ -602,7 +592,6 @@ export function DashboardLayout() {
               className="hidden"
             />
 
-            {/* User dropdown */}
             <div ref={userMenuRef} className="relative">
               <button
                 type="button"
@@ -650,7 +639,6 @@ export function DashboardLayout() {
           </div>
         </header>
 
-        {/* Import result toast */}
         {importResult && (
           <div
             className={`mx-4 mt-2 px-4 py-3 rounded-lg text-sm ${
@@ -772,7 +760,6 @@ export function DashboardLayout() {
           </div>
         </Dialog>
 
-        {/* Content */}
         <div ref={routeContentRef} className="scrollbar-none min-h-0 flex-1 overflow-y-auto bg-[#fbfbfd] will-change-opacity">
           <Outlet />
         </div>

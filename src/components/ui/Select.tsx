@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { ChevronDown, Check } from "lucide-react"
 import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
-import { cn } from "../../lib/utils"
+import { cn } from "@/lib/utils"
 
 gsap.registerPlugin(useGSAP)
 
@@ -15,7 +15,7 @@ export type SelectOption = {
 
 type SelectSize = "sm" | "md"
 
-interface SelectProps {
+export interface SelectProps {
   value: string
   onChange: (value: string) => void
   options: SelectOption[]
@@ -37,7 +37,7 @@ const sizeClasses: Record<SelectSize, string> = {
   md: "min-h-[52px] px-4 py-3 text-sm",
 }
 
-export function Select({
+export const Select = ({
   value,
   onChange,
   options,
@@ -52,7 +52,7 @@ export function Select({
   optionClassName,
   size = "md",
   emptyMessage = "No hay opciones disponibles",
-}: SelectProps) {
+}: SelectProps) => {
   const generatedId = useId()
   const selectId = id ?? `select-${generatedId}`
   const listboxId = `${selectId}-listbox`

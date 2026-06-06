@@ -1,27 +1,27 @@
 import { useState, type FC, type FormEvent } from "react"
 import { Loader2, Plus } from "lucide-react"
-import { Dialog } from "../ui/dialog"
-import type { CreateFolderInput } from "../../domain/models/folder"
-import type { Folder } from "../../domain/models/folder"
+import { Dialog } from "@/components/ui/Dialog"
+import type { CreateDocumentInput } from "@/domain/models/document"
+import type { Document } from "@/domain/models/document"
 
-interface FolderFormDialogProps {
+export interface DocumentFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (input: CreateFolderInput) => Promise<Folder>
-  onSuccess?: (folder: Folder) => void
+  onSubmit: (input: CreateDocumentInput) => Promise<Document>
+  onSuccess?: (doc: Document) => void
   onCancel: () => void
-  parentId?: string
+  folderId?: string
 }
 
-export const FolderFormDialog: FC<FolderFormDialogProps> = ({
+export const DocumentFormDialog: FC<DocumentFormDialogProps> = ({
   open,
   onOpenChange,
   onSubmit,
   onSuccess,
   onCancel,
-  parentId,
+  folderId,
 }) => {
-  const [name, setName] = useState("")
+  const [title, setTitle] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
 
@@ -30,14 +30,15 @@ export const FolderFormDialog: FC<FolderFormDialogProps> = ({
     setError(null)
     setCreating(true)
     try {
-      const input: CreateFolderInput = {
-        name,
-        parentId: parentId || null,
+      const input: CreateDocumentInput = {
+        title,
+        content: `# ${title}\n\n`,
+        folderId: folderId || null,
       }
-      const folder = await onSubmit(input)
-      setName("")
+      const doc = await onSubmit(input)
+      setTitle("")
       onOpenChange(false)
-      onSuccess?.(folder)
+      onSuccess?.(doc)
     } catch (err) {
       setError((err as Error).message)
     } finally {
@@ -46,7 +47,7 @@ export const FolderFormDialog: FC<FolderFormDialogProps> = ({
   }
 
   const handleCancel = () => {
-    setName("")
+    setTitle("")
     setError(null)
     onCancel()
   }
@@ -60,23 +61,23 @@ export const FolderFormDialog: FC<FolderFormDialogProps> = ({
     <Dialog
       open={open}
       onOpenChange={handleOpenChange}
-      onExited={() => { setName(""); setError(null) }}
-      title="New folder"
-      description="Create a folder to organize your documents."
+      onExited={() => { setTitle(""); setError(null) }}
+      title="New document"
+      description="Create a document to organize notes and study material."
       size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-1.5">
-          <label htmlFor="folder-name-input" className="text-xs font-medium text-[#555a6a]">
-            Name
+          <label htmlFor="document-title-input" className="text-xs font-medium text-[#555a6a]">
+            Title
           </label>
           <input
-            id="folder-name-input"
+            id="document-title-input"
             autoFocus
             type="text"
-            placeholder="Folder name..."
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            placeholder="Document title..."
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             className="input-miro w-full text-sm"
           />
         </div>
@@ -89,11 +90,11 @@ export const FolderFormDialog: FC<FolderFormDialogProps> = ({
           </button>
           <button
             type="submit"
-            disabled={!name.trim() || creating}
+            disabled={!title.trim() || creating}
             className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-            Create folder
+            Create
           </button>
         </div>
       </form>

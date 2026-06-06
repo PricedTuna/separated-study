@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, FC, ReactNode } from "react"
 import { ArrowLeft } from "lucide-react"
 
-interface BackButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface BackButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   label?: ReactNode
 }
 

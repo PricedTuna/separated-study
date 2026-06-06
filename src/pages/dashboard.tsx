@@ -1,6 +1,10 @@
 import { useState } from "react"
-import { Button } from "../components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
+import { Button } from "@/components/ui/Button"
+import { Card } from "@/components/ui/Card"
+import { CardContent } from "@/components/ui/CardContent"
+import { CardDescription } from "@/components/ui/CardDescription"
+import { CardHeader } from "@/components/ui/CardHeader"
+import { CardTitle } from "@/components/ui/CardTitle"
 
 interface Deck {
   id: string

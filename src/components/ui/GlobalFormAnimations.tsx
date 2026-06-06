@@ -11,7 +11,7 @@ const GLOBAL_FIELD_SELECTOR = [
   '[data-gsap-focus="true"]',
 ].join(', ')
 
-export function GlobalFormAnimations() {
+export const GlobalFormAnimations = () => {
   const scopeRef = useRef<HTMLDivElement | null>(null)
 
   useGSAP((_, contextSafe) => {

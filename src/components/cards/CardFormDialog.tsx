@@ -2,10 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Loader2, Plus, Save } from "lucide-react"
 import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
-import { Dialog } from "../ui/dialog"
-import { Select } from "../ui/select"
-import type { Deck } from "../../domain/models/deck"
-import type { Document } from "../../domain/models/document"
+import { Dialog } from "@/components/ui/Dialog"
+import { Select } from "@/components/ui/Select"
+import type { Deck } from "@/domain/models/deck"
+import type { Document } from "@/domain/models/document"
 
 gsap.registerPlugin(useGSAP)
 
@@ -16,7 +16,7 @@ export type CardFormValues = {
   documentId: string
 }
 
-type Props = {
+export interface CardFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onExited?: () => void
@@ -34,7 +34,7 @@ type Props = {
 
 const EMPTY_OPTION = { value: "", label: "Sin documento" }
 
-export function CardFormDialog({
+export const CardFormDialog = ({
   open,
   onOpenChange,
   onExited,
@@ -48,7 +48,7 @@ export function CardFormDialog({
   description,
   submitLabel,
   onSubmit,
-}: Props) {
+}: CardFormDialogProps) => {
   const formRef = useRef<HTMLFormElement | null>(null)
   const [values, setValues] = useState<CardFormValues>(initialValues)
 

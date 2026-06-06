@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom"
 import { ArrowLeft, ChevronRight } from "lucide-react"
-import { cn } from "../../lib/utils"
+import { cn } from "@/lib/utils"
 import { useGSAP } from "@gsap/react"
 import gsap from "gsap"
 import { useRef, useState, useEffect } from "react"
@@ -12,31 +12,23 @@ export interface BreadcrumbItem {
   name: string
 }
 
-interface BreadcrumbProps {
+export interface BreadcrumbProps {
   items: BreadcrumbItem[]
   rootLabel?: string
   rootPath?: string
   className?: string
 }
 
-/**
- * Breadcrumb - Navigation breadcrumb for nested folder hierarchy
- * Shows: Root > Folder1 > Folder2 > Current
- * - Root is always shown as link
- * - All items except last are clickable links
- * - Last item is shown as text (current location)
- */
-export function Breadcrumb({
+export const Breadcrumb = ({
   items,
   rootLabel = "Documents",
   rootPath = "/dashboard/documents",
   className,
-}: BreadcrumbProps) {
+}: BreadcrumbProps) => {
   const containerRef = useRef(null)
   const [animatedItems, setAnimatedItems] = useState<BreadcrumbItem[]>(items)
   const [isExiting, setIsExiting] = useState(false)
 
-  // Sync when items change: animate out, then update
   useEffect(() => {
     if (animatedItems.length === 0) {
       setAnimatedItems(items)
@@ -61,7 +53,6 @@ export function Breadcrumb({
     }
   }, [items])
 
-  // Enter animation
   useGSAP(
     () => {
       if (isExiting) return
@@ -100,8 +91,7 @@ export function Breadcrumb({
         <ArrowLeft className="w-3 h-3" />
         {rootLabel}
       </Link>
-      
-      {/* Mobile ellipsis: shown only on mobile when there are more than 1 items */}
+
       {displayItems.length > 1 && (
         <div className="breadcrumb-item flex items-center gap-1 sm:hidden shrink-0">
           <ChevronRight className="w-3 h-3 text-[#a5a8b5]" />
@@ -112,8 +102,8 @@ export function Breadcrumb({
       {displayItems.map((item, idx) => {
         const isLast = idx === displayItems.length - 1
         return (
-          <div 
-            key={item.id} 
+          <div
+            key={item.id}
             className={cn(
               "breadcrumb-item flex items-center gap-1 min-w-0",
               !isLast && "hidden sm:flex"

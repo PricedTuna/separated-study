@@ -5,7 +5,7 @@ import { useGSAP } from "@gsap/react"
 
 gsap.registerPlugin(useGSAP)
 
-interface NewItemDropdownProps {
+export interface NewItemDropdownProps {
   onNewDocument: () => void
   onNewFolder: () => void
 }

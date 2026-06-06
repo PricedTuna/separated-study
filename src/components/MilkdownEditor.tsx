@@ -8,10 +8,10 @@ import "@milkdown/crepe/theme/frame.css";
 
 gsap.registerPlugin(useGSAP)
 
-type Props = CrepeConfig & {
+export interface MilkdownEditorProps extends CrepeConfig {
   onChange?: (markdown: string, prevMarkdown: string) => void;
   onAddCard?: (selectedText: string) => void;
-};
+}
 
 type SelectionMenuState = {
   top: number;
@@ -20,7 +20,7 @@ type SelectionMenuState = {
   selectedText: string;
 };
 
-export const MilkdownEditor = forwardRef<{ getMarkdown: () => string }, Props>(({ onChange, onAddCard, ...props }, ref) => {
+export const MilkdownEditor = forwardRef<{ getMarkdown: () => string }, MilkdownEditorProps>(({ onChange, onAddCard, ...props }, ref) => {
   const crepeRef = React.useRef<Crepe | null>(null)
   const wrapperRef = React.useRef<HTMLDivElement | null>(null)
   const buttonRef = React.useRef<HTMLButtonElement | null>(null)

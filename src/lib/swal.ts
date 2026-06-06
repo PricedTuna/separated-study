@@ -13,8 +13,8 @@ const baseConfig: SweetAlertOptions = {
   // Buttons
   confirmButtonColor: '#5b76fe',
   cancelButtonColor: '#c7cad5',
-  confirmButtonText: 'Confirmar',
-  cancelButtonText: 'Cancelar',
+  confirmButtonText: 'Confirm',
+  cancelButtonText: 'Cancel',
   
   // Icons & colors
   iconColor: '#5b76fe',
@@ -81,14 +81,14 @@ export const confirmDelete = (
   customText?: string
 ) => {
   return swalWithDefaults.fire({
-    title: `¿Eliminar "${itemTitle}"?`,
-    text: customText || 'Esta acción no se puede deshacer.',
+    title: `Delete "${itemTitle}"?`,
+    text: customText || 'This action cannot be undone.',
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#5b76fe',
     cancelButtonColor: '#c7cad5',
-    confirmButtonText: 'Eliminar',
-    cancelButtonText: 'Cancelar',
+    confirmButtonText: 'Delete',
+    cancelButtonText: 'Cancel',
   });
 };
 

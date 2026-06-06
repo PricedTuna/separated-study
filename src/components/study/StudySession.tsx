@@ -2,13 +2,13 @@ import { useState, useEffect, useRef, useMemo } from "react"
 import { ArrowLeft, BrainCircuit, X, Check, Shuffle, RotateCcw, Keyboard } from "lucide-react"
 import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
-import type { Card, CardResult } from "../../domain/models/card"
-import type { CardReview } from "../../domain/models/card-review"
-import { DEFAULT_FSRS_PARAMS, getNextIntervalString, toFSRSParams } from "../../lib/fsrs"
+import type { Card, CardResult } from "@/domain/models/card"
+import type { CardReview } from "@/domain/models/card-review"
+import { DEFAULT_FSRS_PARAMS, getNextIntervalString, toFSRSParams } from "@/lib/fsrs"
 
 gsap.registerPlugin(useGSAP)
 
-interface StudySessionProps {
+export interface StudySessionProps {
   initialCards: (Card & { review?: CardReview | null })[]
   mode: "srs" | "free"
   onResult: (cardId: string, result: CardResult) => Promise<void>
@@ -16,7 +16,7 @@ interface StudySessionProps {
 }
 type ResultStatKey = Exclude<CardResult, "unseen">
 
-export function StudySession({ initialCards, mode, onResult, onExit }: StudySessionProps) {
+export const StudySession = ({ initialCards, mode, onResult, onExit }: StudySessionProps) => {
   type StudyCard = Card & { review?: CardReview | null }
   const [cards, setCards] = useState<StudyCard[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -47,31 +47,22 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
     })
   }
 
-  // Initialize cards when initialCards or mode changes
   useEffect(() => {
     let sessionCards = [...initialCards]
     if (mode === "free") {
-      // Shuffle cards for free mode
       sessionCards = sessionCards.sort(() => Math.random() - 0.5)
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCards(sessionCards)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentIndex(0)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFlipped(false)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSessionTotal(sessionCards.length)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRequeuedCardIds(new Set())
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSessionDone(false)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStats({ again: 0, hard: 0, good: 0, easy: 0 })
   }, [initialCards, mode])
 
   const activeCard = mode === "srs" ? cards[0] : cards[currentIndex]
-  const progress = mode === "srs" 
+  const progress = mode === "srs"
     ? Math.min(sessionTotal, sessionTotal - cards.length + 1)
     : currentIndex + 1
 
@@ -86,32 +77,29 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
     }
   }, [activeCard, mode])
 
-  // Animations
   useGSAP(() => {
     if (!activeCard) return
 
-    // Minimalist entry animation for the card
-    gsap.fromTo(cardRef.current, 
-      { 
-        y: 15, 
+    gsap.fromTo(cardRef.current,
+      {
+        y: 15,
         opacity: 0,
       },
-      { 
-        y: 0, 
-        opacity: 1, 
-        duration: 0.4, 
-        ease: "power2.out" 
+      {
+        y: 0,
+        opacity: 1,
+        duration: 0.4,
+        ease: "power2.out"
       }
     )
   }, { dependencies: [activeCard?.id], scope: containerRef })
 
   useGSAP(() => {
     if (flipped && buttonsWrapperRef.current && buttonsRef.current) {
-      // Smoothly animate the wrapper height to prevent layout jump
-      gsap.to(buttonsWrapperRef.current, { 
-        height: "auto", 
+      gsap.to(buttonsWrapperRef.current, {
+        height: "auto",
         autoAlpha: 1,
-        duration: 0.4, 
+        duration: 0.4,
         ease: "power2.out",
         overwrite: true,
         onComplete: () => {
@@ -121,15 +109,14 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
         }
       })
 
-      // Animate buttons from hidden state and slightly below
-      gsap.fromTo(buttonsRef.current.children, 
-        { 
-          y: 15, 
-          opacity: 0 
+      gsap.fromTo(buttonsRef.current.children,
+        {
+          y: 15,
+          opacity: 0
         },
-        { 
-          y: 0, 
-          opacity: 1, 
+        {
+          y: 0,
+          opacity: 1,
           stagger: 0.04,
           duration: 0.35,
           ease: "power2.out",
@@ -158,7 +145,6 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
     }
 
     try {
-      // Smooth exit: card moves down
       await gsap.to(cardRef.current, {
         y: 15,
         opacity: 0,
@@ -191,8 +177,7 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
 
   function toggleFlip() {
     if (isAnimating) return
-    
-    // Minimalist flip: subtle scale and content fade
+
     const tl = gsap.timeline()
     tl.to(".card-content", {
       opacity: 0,
@@ -243,7 +228,6 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
 
   return (
     <div ref={containerRef} className="min-h-screen bg-[#f5f5f5] flex flex-col fixed inset-0 z-50">
-      {/* Header */}
       <div className="bg-white border-b border-[#e9eaef] px-6 py-4 flex items-center justify-between shadow-sm">
         <button onClick={handleExit} disabled={isExiting} className="btn-secondary flex items-center gap-1.5 text-sm disabled:opacity-50">
           <ArrowLeft className="w-4 h-4" />
@@ -264,7 +248,6 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
         </div>
       </div>
 
-      {/* Big Card */}
       <div ref={contentRef} className="flex-1 flex flex-col items-center justify-center p-6 pb-24 overflow-y-auto">
         <div className="w-full max-w-2xl">
           {!isCompleted && activeCard && (
@@ -277,7 +260,7 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
               <BrainCircuit className="w-4 h-4 text-[#5b76fe]" />
               {flipped ? "Answer" : "Question"}
             </div>
-            
+
             <div className="card-content w-full">
               <p className="text-3xl font-semibold text-[#1c1c1e] leading-tight max-w-prose">
                 {flipped ? activeCard.back : activeCard.front}
@@ -324,10 +307,9 @@ export function StudySession({ initialCards, mode, onResult, onExit }: StudySess
             </div>
           )}
 
-          {/* Answer buttons wrapper - hidden when session is completed */}
           {!isCompleted && (
-          <div 
-            ref={buttonsWrapperRef} 
+          <div
+            ref={buttonsWrapperRef}
             className="w-full overflow-hidden px-4 -mx-4"
           >
             <div className="pt-10 pb-12">

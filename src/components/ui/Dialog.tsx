@@ -8,7 +8,7 @@ gsap.registerPlugin(useGSAP)
 
 type DialogSize = "sm" | "md" | "lg"
 
-interface DialogProps {
+export interface DialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
@@ -45,14 +45,12 @@ export const Dialog: FC<DialogProps> = ({
   const footerRef = useRef<HTMLDivElement | null>(null)
   const initializedRef = useRef(false)
 
-  // Internal state to keep content rendered during exit animation
   const [shouldRenderContent, setShouldRenderContent] = useState(open)
 
   useEffect(() => {
     if (open) {
       setShouldRenderContent(true)
     } else {
-      // Delay unmounting until after animation
       const timer = setTimeout(() => {
         setShouldRenderContent(false)
         onExited?.()
@@ -158,9 +156,6 @@ export const Dialog: FC<DialogProps> = ({
 
   useEffect(() => {
     if (open) {
-      // Focus the first element with autoFocus or the first input/textarea
-      // We use a slightly longer delay and requestAnimationFrame to ensure
-      // the DOM is ready, not inert, and animations are in progress
       const timer = setTimeout(() => {
         requestAnimationFrame(() => {
           const el = panelRef.current?.querySelector(
@@ -168,7 +163,6 @@ export const Dialog: FC<DialogProps> = ({
           ) as HTMLElement
           if (el) {
             el.focus()
-            // If it's a text input, ensure cursor is visible/at end
             if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
               const val = el.value
               el.value = ""

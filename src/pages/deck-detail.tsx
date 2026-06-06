@@ -12,9 +12,9 @@ import type { Deck } from "../domain/models/deck"
 import type { Card, CardResult } from "../domain/models/card"
 import type { CardReview } from "../domain/models/card-review"
 import type { Document } from "../domain/models/document"
-import { BackButton } from "../components/ui/back-button"
-import { CardFormDialog, type CardFormValues } from "../components/cards/card-form-dialog"
-import { StudySession } from "../components/study/study-session"
+import { BackButton } from "@/components/ui/BackButton"
+import { CardFormDialog, type CardFormValues } from "@/components/cards/CardFormDialog"
+import { StudySession } from "@/components/study/StudySession"
 
 const EMPTY: CardFormValues = { front: "", back: "", deckId: "", documentId: "" }
 type CardFilter = "all" | "due" | "new" | "learning"
@@ -133,8 +133,8 @@ export function DeckDetailPage() {
   async function handleDelete(cardId: string) {
     const card = cards.find(c => c.id === cardId)
     const { isConfirmed } = await confirmDelete(
-      'la tarjeta',
-      card ? `¿Eliminar la tarjeta "${card.front.substring(0, 30)}${card.front.length > 30 ? '...' : ''}"?` : undefined
+      'the card',
+      card ? `Delete the card "${card.front.substring(0, 30)}${card.front.length > 30 ? '...' : ''}"?` : undefined
     )
     if (!isConfirmed) return
     
