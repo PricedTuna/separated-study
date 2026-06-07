@@ -8,36 +8,47 @@ function getCacheKey(documentId?: string) {
 }
 
 export function useCards(documentId?: string) {
-  const [cards, setCards] = useState<Card[]>([])
-  const [loading, setLoading] = useState(true)
+  const [cards, setCards] = useState<Card[]>(() => getCached<Card[]>(getCacheKey(documentId)) ?? [])
+  const [loading, setLoading] = useState(() => !getCached<Card[]>(getCacheKey(documentId)))
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async (forceRefresh = false) => {
+    const cacheKey = getCacheKey(documentId)
+    if (!forceRefresh) {
+      const cached = getCached<Card[]>(cacheKey)
+      if (cached) return cached
+    }
+    const data = documentId
+      ? await cardService.getByDocumentId(documentId)
+      : await cardService.getAll()
+    setCache(cacheKey, data)
+    return data
+  }, [documentId])
+
+  useEffect(() => {
+    let cancelled = false
+    load().then(data => {
+      if (!cancelled) setCards(data)
+    }).catch(e => {
+      if (!cancelled) setError((e as Error).message)
+    }).finally(() => {
+      if (!cancelled) setLoading(false)
+    })
+    return () => { cancelled = true }
+  }, [load])
+
+  const reload = useCallback(async (forceRefresh = false) => {
     setLoading(true)
     setError(null)
     try {
-      const cacheKey = getCacheKey(documentId)
-      if (!forceRefresh) {
-        const cached = getCached<Card[]>(cacheKey)
-        if (cached) {
-          setCards(cached)
-          setLoading(false)
-          return
-        }
-      }
-      const data = documentId
-        ? await cardService.getByDocumentId(documentId)
-        : await cardService.getAll()
-      setCache(cacheKey, data)
+      const data = await load(forceRefresh)
       setCards(data)
     } catch (e) {
       setError((e as Error).message)
     } finally {
       setLoading(false)
     }
-  }, [documentId])
-
-  useEffect(() => { load() }, [load])
+  }, [load])
 
   const create = useCallback(async (input: CreateCardInput): Promise<Card> => {
     const card = await cardService.create(input)
@@ -65,5 +76,5 @@ export function useCards(documentId?: string) {
     invalidateCache(getCacheKey(documentId))
   }, [documentId])
 
-  return { cards, loading, error, create, update, recordResult, remove, reload: load }
+  return { cards, loading, error, create, update, recordResult, remove, reload }
 }

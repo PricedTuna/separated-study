@@ -34,15 +34,15 @@ export function calculateFSRS(
   result: CardResult,
   now: Date = new Date()
 ): FSRSParams {
-  const { stability, difficulty, interval, reps, lapses, state, lastReview } = current
+  const { stability, difficulty, reps, lapses, state, lastReview } = current
 
   // Default values for new cards
   const S_0 = 1; // 1 day initial stability
 
   let newStability = stability || S_0
   let newDifficulty = difficulty
-  let newInterval = interval
-  let newReps = reps + 1
+  let newInterval: number
+  const newReps = reps + 1
   let newLapses = lapses
   let newState: CardReviewState = state
   let newDue: Date

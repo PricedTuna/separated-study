@@ -15,6 +15,7 @@ export class CardReviewLocalStorageRepository implements ICardReviewRepository {
   }
 
   async findDueForReview(_userId: string) {
+    void _userId
     const all = await adapter.findAll()
     const now = new Date().toISOString()
     return all.filter((r) => r.due <= now).sort((a, b) => a.due.localeCompare(b.due))

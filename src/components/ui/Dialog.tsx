@@ -49,7 +49,8 @@ export const Dialog: FC<DialogProps> = ({
 
   useEffect(() => {
     if (open) {
-      setShouldRenderContent(true)
+      const id = requestAnimationFrame(() => setShouldRenderContent(true))
+      return () => cancelAnimationFrame(id)
     } else {
       const timer = setTimeout(() => {
         setShouldRenderContent(false)

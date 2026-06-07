@@ -35,21 +35,25 @@ export function DocumentDetailPage() {
   }, [])
 
   const load = useCallback(async () => {
-    if (!id) return
+    if (!id) return null
     const [found, decksData] = await Promise.all([
       documentService.getById(id),
       deckService.getAll(),
     ])
-    if (!found) { navigate("/dashboard/documents"); return }
-    setDoc(found)
-    setTitle(found.title)
-    setContent(found.content)
-    setDecks(decksData)
-    setLoading(false)
+    if (!found) { navigate("/dashboard/documents"); return null }
+    return { found, decksData }
   }, [id, navigate])
 
   useEffect(() => {
-    load()
+    const result = load()
+    result.then(data => {
+      if (!data) return
+      setDoc(data.found)
+      setTitle(data.found.title)
+      setContent(data.found.content)
+      setDecks(data.decksData)
+      setLoading(false)
+    })
   }, [load])
 
   useGSAP(() => {

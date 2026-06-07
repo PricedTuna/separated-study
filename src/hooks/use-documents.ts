@@ -6,33 +6,44 @@ import { getCached, setCache, invalidateCache } from "../lib/cache"
 const CACHE_KEY = "documents"
 
 export function useDocuments() {
-  const [documents, setDocuments] = useState<Document[]>([])
-  const [loading, setLoading] = useState(true)
+  const [documents, setDocuments] = useState<Document[]>(() => getCached<Document[]>(CACHE_KEY) ?? [])
+  const [loading, setLoading] = useState(() => !getCached<Document[]>(CACHE_KEY))
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async (forceRefresh = false) => {
+    if (!forceRefresh) {
+      const cached = getCached<Document[]>(CACHE_KEY)
+      if (cached) return cached
+    }
+    const data = await documentService.getAll()
+    setCache(CACHE_KEY, data)
+    return data
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    load().then(data => {
+      if (!cancelled) setDocuments(data)
+    }).catch(e => {
+      if (!cancelled) setError((e as Error).message)
+    }).finally(() => {
+      if (!cancelled) setLoading(false)
+    })
+    return () => { cancelled = true }
+  }, [load])
+
+  const reload = useCallback(async (forceRefresh = false) => {
     setLoading(true)
     setError(null)
     try {
-      if (!forceRefresh) {
-        const cached = getCached<Document[]>(CACHE_KEY)
-        if (cached) {
-          setDocuments(cached)
-          setLoading(false)
-          return
-        }
-      }
-      const data = await documentService.getAll()
-      setCache(CACHE_KEY, data)
+      const data = await load(forceRefresh)
       setDocuments(data)
     } catch (e) {
       setError((e as Error).message)
     } finally {
       setLoading(false)
     }
-  }, [])
-
-  useEffect(() => { load() }, [load])
+  }, [load])
 
   const create = useCallback(async (input: CreateDocumentInput): Promise<Document> => {
     const doc = await documentService.create(input)
@@ -54,5 +65,5 @@ export function useDocuments() {
     invalidateCache(CACHE_KEY)
   }, [])
 
-  return { documents, loading, error, create, update, remove, reload: load }
+  return { documents, loading, error, create, update, remove, reload }
 }

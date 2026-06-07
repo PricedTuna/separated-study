@@ -25,9 +25,10 @@ export const SidebarItem = ({
 
   useEffect(() => {
     if (isActive || hasChildActive) {
-      setIsExpanded(true)
+      const id = requestAnimationFrame(() => setIsExpanded(true))
+      return () => cancelAnimationFrame(id)
     }
-  }, [activePath.join(","), item.id])
+  }, [isActive, hasChildActive])
 
   const handleToggle = () => {
     setIsExpanded(!isExpanded)

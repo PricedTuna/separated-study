@@ -99,18 +99,21 @@ export const Select = ({
   }, [highlightedIndex, options, selectedIndex])
 
   useEffect(() => {
-    if (!open) {
-      setHighlightedIndex(selectedIndex)
-      return
-    }
+    const id = requestAnimationFrame(() => {
+      if (!open) {
+        setHighlightedIndex(selectedIndex)
+        return
+      }
 
-    if (selectedIndex >= 0 && !options[selectedIndex]?.disabled) {
-      setHighlightedIndex(selectedIndex)
-      return
-    }
+      if (selectedIndex >= 0 && !options[selectedIndex]?.disabled) {
+        setHighlightedIndex(selectedIndex)
+        return
+      }
 
-    const firstEnabledIndex = options.findIndex((option) => !option.disabled)
-    setHighlightedIndex(firstEnabledIndex)
+      const firstEnabledIndex = options.findIndex((option) => !option.disabled)
+      setHighlightedIndex(firstEnabledIndex)
+    })
+    return () => cancelAnimationFrame(id)
   }, [open, options, selectedIndex])
 
   useEffect(() => {

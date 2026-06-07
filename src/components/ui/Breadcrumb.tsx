@@ -30,28 +30,33 @@ export const Breadcrumb = ({
   const [isExiting, setIsExiting] = useState(false)
 
   useEffect(() => {
-    if (animatedItems.length === 0) {
-      setAnimatedItems(items)
-      return
+    if (animatedItems.length === 0 && items.length > 0) {
+      const id = requestAnimationFrame(() => setAnimatedItems(items))
+      return () => cancelAnimationFrame(id)
     }
     if (JSON.stringify(animatedItems) !== JSON.stringify(items)) {
-      setIsExiting(true)
-      const ctx = gsap.context(() => {
-        gsap.to(".breadcrumb-item", {
-          opacity: 0,
-          x: -10,
-          duration: 0.2,
-          stagger: 0.05,
-          ease: "power2.in",
-          onComplete: () => {
-            setAnimatedItems(items)
-            setIsExiting(false)
-          },
-        })
-      }, containerRef)
-      return () => ctx.revert()
+      const id = requestAnimationFrame(() => setIsExiting(true))
+      return () => cancelAnimationFrame(id)
     }
-  }, [items])
+  }, [items, animatedItems])
+
+  useEffect(() => {
+    if (!isExiting) return
+    const ctx = gsap.context(() => {
+      gsap.to(".breadcrumb-item", {
+        opacity: 0,
+        x: -10,
+        duration: 0.2,
+        stagger: 0.05,
+        ease: "power2.in",
+        onComplete: () => {
+          setAnimatedItems(items)
+          setIsExiting(false)
+        },
+      })
+    }, containerRef)
+    return () => ctx.revert()
+  }, [isExiting, items])
 
   useGSAP(
     () => {

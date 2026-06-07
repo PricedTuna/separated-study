@@ -53,7 +53,10 @@ export const CardFormDialog = ({
   const [values, setValues] = useState<CardFormValues>(initialValues)
 
   useEffect(() => {
-    if (open) setValues(initialValues)
+    if (open) {
+      const id = requestAnimationFrame(() => setValues(initialValues))
+      return () => cancelAnimationFrame(id)
+    }
   }, [initialValues, open])
 
   useGSAP(() => {
