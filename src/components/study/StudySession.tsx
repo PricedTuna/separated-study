@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react"
+import { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { ArrowLeft, BrainCircuit, X, Check, Shuffle, RotateCcw, Keyboard } from "lucide-react"
 import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
@@ -8,50 +8,76 @@ import { DEFAULT_FSRS_PARAMS, getNextIntervalString, toFSRSParams } from "@/lib/
 
 gsap.registerPlugin(useGSAP)
 
+type StudyCard = Card & { review?: CardReview | null }
+
 export interface StudySessionProps {
-  initialCards: (Card & { review?: CardReview | null })[]
+  initialCards: StudyCard[]
   mode: "srs" | "free"
   onResult: (cardId: string, result: CardResult) => Promise<void>
   onExit: () => void
 }
 type ResultStatKey = Exclude<CardResult, "unseen">
 
+function prepareSessionCards(cards: StudyCard[], mode: StudySessionProps["mode"]) {
+  const sessionCards = [...cards]
+
+  if (mode !== "free") return sessionCards
+
+  for (let index = sessionCards.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    const currentCard = sessionCards[index]
+    const swapCard = sessionCards[swapIndex]
+    sessionCards[index] = swapCard
+    sessionCards[swapIndex] = currentCard
+  }
+
+  return sessionCards
+}
+
 export const StudySession = ({ initialCards, mode, onResult, onExit }: StudySessionProps) => {
-  type StudyCard = Card & { review?: CardReview | null }
-  const [cards, setCards] = useState<StudyCard[]>([])
+  const [cards, setCards] = useState<StudyCard[]>(() => prepareSessionCards(initialCards, mode))
   const [currentIndex, setCurrentIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
-  const [sessionTotal, setSessionTotal] = useState(0)
+  const [sessionTotal, setSessionTotal] = useState(initialCards.length)
   const [isAnimating, setIsAnimating] = useState(false)
   const [repeatIncorrect, setRepeatIncorrect] = useState(true)
   const [requeuedCardIds, setRequeuedCardIds] = useState<Set<string>>(new Set())
   const [sessionDone, setSessionDone] = useState(false)
   const [stats, setStats] = useState<Record<ResultStatKey, number>>({ again: 0, hard: 0, good: 0, easy: 0 })
   const [isExiting, setIsExiting] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   const cardRef = useRef<HTMLDivElement>(null)
+  const cardContentRef = useRef<HTMLDivElement>(null)
   const buttonsWrapperRef = useRef<HTMLDivElement>(null)
   const buttonsRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
+  const isAnimatingRef = useRef(false)
+  const isFlippingRef = useRef(false)
+  const sessionModeRef = useRef(mode)
+  const { contextSafe } = useGSAP({ scope: containerRef })
 
-  const handleExit = () => {
+  const handleExit = useCallback(() => {
     if (isExiting) return
     setIsExiting(true)
-    gsap.to(contentRef.current, {
-      opacity: 0,
-      y: -20,
-      duration: 0.3,
-      ease: "power2.out",
-      onComplete: () => onExit(),
+    const animateExit = contextSafe(() => {
+      gsap.to(contentRef.current, {
+        opacity: 0,
+        y: -20,
+        duration: 0.3,
+        ease: "power2.out",
+        onComplete: () => onExit(),
+      })
     })
-  }
+    animateExit()
+  }, [contextSafe, isExiting, onExit])
 
   useEffect(() => {
-    let sessionCards = [...initialCards]
-    if (mode === "free") {
-      sessionCards = sessionCards.sort(() => Math.random() - 0.5)
-    }
+    if (sessionModeRef.current === mode) return
+
+    sessionModeRef.current = mode
+    const sessionCards = prepareSessionCards(initialCards, mode)
     setCards(sessionCards)
     setCurrentIndex(0)
     setFlipped(false)
@@ -59,12 +85,16 @@ export const StudySession = ({ initialCards, mode, onResult, onExit }: StudySess
     setRequeuedCardIds(new Set())
     setSessionDone(false)
     setStats({ again: 0, hard: 0, good: 0, easy: 0 })
+    setActionError(null)
   }, [initialCards, mode])
 
   const activeCard = mode === "srs" ? cards[0] : cards[currentIndex]
-  const progress = mode === "srs"
-    ? Math.min(sessionTotal, sessionTotal - cards.length + 1)
-    : currentIndex + 1
+  const progressTotal = mode === "free" ? Math.max(sessionTotal, cards.length) : sessionTotal
+  const progress = sessionDone || !activeCard
+    ? progressTotal
+    : mode === "srs"
+      ? Math.min(progressTotal, progressTotal - cards.length + 1)
+      : Math.min(progressTotal, currentIndex + 1)
 
   const intervalLabels = useMemo(() => {
     if (!activeCard || mode !== "srs") return null
@@ -136,32 +166,59 @@ export const StudySession = ({ initialCards, mode, onResult, onExit }: StudySess
     }
   }, { dependencies: [flipped], scope: containerRef })
 
-  async function handleAction(result: CardResult) {
+  const handleAction = useCallback(async (result: CardResult) => {
     if (!activeCard) return
-    if (isAnimating) return
+    if (!flipped) return
+    if (isAnimatingRef.current) return
+    isAnimatingRef.current = true
     setIsAnimating(true)
-    if (result !== "unseen") {
-      setStats((prev) => ({ ...prev, [result]: prev[result] + 1 }))
-    }
+    setActionError(null)
+
+    const reviewedCard = activeCard
 
     try {
-      await gsap.to(cardRef.current, {
-        y: 15,
-        opacity: 0,
-        duration: 0.3,
-        ease: "power2.in"
-      })
+      const hideActiveCard = async () => {
+        const hideCard = contextSafe(() => {
+          return gsap.to(cardRef.current, {
+            y: 15,
+            opacity: 0,
+            duration: 0.3,
+            ease: "power2.in"
+          })
+        })
+        await hideCard()
+      }
 
       if (mode === "srs") {
-        await onResult(activeCard.id, result)
-      } else {
-        const shouldRequeue = repeatIncorrect && result === "again" && !requeuedCardIds.has(activeCard.id)
-        if (shouldRequeue) {
-          setCards((prev) => [...prev, activeCard])
-          setRequeuedCardIds((prev) => new Set(prev).add(activeCard.id))
+        await onResult(reviewedCard.id, result)
+        if (result !== "unseen") {
+          setStats((prev) => ({ ...prev, [result]: prev[result] + 1 }))
         }
+        await hideActiveCard()
+        const remainingCards = cards.filter((card) => card.id !== reviewedCard.id)
+        setCards(remainingCards)
+        setFlipped(false)
+
+        if (remainingCards.length === 0) {
+          setSessionDone(true)
+        }
+      } else {
+        await hideActiveCard()
+        const shouldRequeue = repeatIncorrect && result === "again" && !requeuedCardIds.has(reviewedCard.id)
+        const nextCards = shouldRequeue ? [...cards, reviewedCard] : cards
         const nextIndex = currentIndex + 1
-        if (nextIndex < cards.length) {
+
+        if (result !== "unseen") {
+          setStats((prev) => ({ ...prev, [result]: prev[result] + 1 }))
+        }
+
+        if (shouldRequeue) {
+          setCards(nextCards)
+          setSessionTotal((prev) => Math.max(prev, nextCards.length))
+          setRequeuedCardIds((prev) => new Set(prev).add(reviewedCard.id))
+        }
+
+        if (nextIndex < nextCards.length) {
           setCurrentIndex(nextIndex)
           setFlipped(false)
         } else {
@@ -170,34 +227,55 @@ export const StudySession = ({ initialCards, mode, onResult, onExit }: StudySess
       }
     } catch (err) {
       console.error("Study action failed:", err)
+      setActionError("Could not save that review. Try again.")
+      const restoreCard = contextSafe(() => {
+        return gsap.to(cardRef.current, {
+          y: 0,
+          opacity: 1,
+          duration: 0.2,
+          ease: "power2.out",
+        })
+      })
+      await restoreCard()
     } finally {
+      isAnimatingRef.current = false
       setIsAnimating(false)
     }
-  }
+  }, [activeCard, cards, contextSafe, currentIndex, flipped, mode, onResult, repeatIncorrect, requeuedCardIds])
 
-  function toggleFlip() {
-    if (isAnimating) return
+  const toggleFlip = useCallback(() => {
+    if (!activeCard) return
+    if (isAnimatingRef.current || isFlippingRef.current) return
+    if (!cardContentRef.current) return
 
-    const tl = gsap.timeline()
-    tl.to(".card-content", {
-      opacity: 0,
-      scale: 0.98,
-      duration: 0.15,
-      ease: "power2.in",
-      onComplete: () => {
-        setFlipped(!flipped)
-      }
-    }).to(".card-content", {
-      opacity: 1,
-      scale: 1,
-      duration: 0.2,
-      ease: "power2.out"
+    isFlippingRef.current = true
+
+    const animateFlip = contextSafe(() => {
+      const tl = gsap.timeline()
+      tl.to(cardContentRef.current, {
+        opacity: 0,
+        scale: 0.98,
+        duration: 0.15,
+        ease: "power2.in",
+        onComplete: () => {
+          setFlipped((current) => !current)
+        }
+      }).to(cardContentRef.current, {
+        opacity: 1,
+        scale: 1,
+        duration: 0.2,
+        ease: "power2.out",
+        onComplete: () => {
+          isFlippingRef.current = false
+        }
+      })
     })
-  }
+    animateFlip()
+  }, [activeCard, contextSafe])
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (sessionDone || isAnimating) return
+      if (sessionDone || isAnimatingRef.current) return
       if (event.key === " " || event.key === "Spacebar") {
         event.preventDefault()
         toggleFlip()
@@ -218,7 +296,7 @@ export const StudySession = ({ initialCards, mode, onResult, onExit }: StudySess
     }
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
-  }, [activeCard, flipped, isAnimating, mode, sessionDone])
+  }, [activeCard, flipped, handleAction, mode, sessionDone, toggleFlip])
 
   const isCompleted = sessionDone || (mode === "srs" && sessionTotal > 0 && (!activeCard || cards.length === 0))
 
@@ -261,7 +339,7 @@ export const StudySession = ({ initialCards, mode, onResult, onExit }: StudySess
               {flipped ? "Answer" : "Question"}
             </div>
 
-            <div className="card-content w-full">
+            <div ref={cardContentRef} className="card-content w-full">
               <p className="text-3xl font-semibold text-[#1c1c1e] leading-tight max-w-prose">
                 {flipped ? activeCard.back : activeCard.front}
               </p>
@@ -273,6 +351,12 @@ export const StudySession = ({ initialCards, mode, onResult, onExit }: StudySess
               </p>
             </div>
           </div>
+          )}
+
+          {actionError && !isCompleted && (
+            <p className="mt-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-600">
+              {actionError}
+            </p>
           )}
 
           {isCompleted && (
@@ -292,10 +376,12 @@ export const StudySession = ({ initialCards, mode, onResult, onExit }: StudySess
                       setSessionDone(false)
                       setCurrentIndex(0)
                       setFlipped(false)
-                      setCards([...initialCards])
-                      setSessionTotal(initialCards.length)
+                      const sessionCards = prepareSessionCards(initialCards, mode)
+                      setCards(sessionCards)
+                      setSessionTotal(sessionCards.length)
                       setRequeuedCardIds(new Set())
                       setStats({ again: 0, hard: 0, good: 0, easy: 0 })
+                      setActionError(null)
                     }}
                     className="btn-secondary text-sm flex items-center gap-1.5"
                   >
@@ -310,7 +396,7 @@ export const StudySession = ({ initialCards, mode, onResult, onExit }: StudySess
           {!isCompleted && (
           <div
             ref={buttonsWrapperRef}
-            className="w-full overflow-hidden px-4 -mx-4"
+            className="invisible h-0 w-full overflow-hidden px-4 -mx-4 opacity-0"
           >
             <div className="pt-10 pb-12">
                 {mode === "srs" && (

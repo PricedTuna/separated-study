@@ -123,10 +123,6 @@ export function DeckDetailPage() {
       ])
       setCards(cardsData)
       setDueCards(studyData)
-      
-      if (studyData.length === 0) {
-        setTimeout(() => exitStudy(), 500)
-      }
     }
   }
 

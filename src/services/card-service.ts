@@ -82,6 +82,18 @@ export class CardService {
       // Existing review - calculate new FSRS params
       const currentParams = toFSRSParams(review)
       const newParams = calculateFSRS(currentParams, result, now)
+      console.log(
+        {
+        stability: newParams.stability,
+        difficulty: newParams.difficulty,
+        due: newParams.due,
+        lastReview: now.toISOString(),
+        interval: newParams.interval,
+        reps: newParams.reps,
+        lapses: newParams.lapses,
+        state: newParams.state,
+      }
+      )
       await this.reviewRepo.update(review.id, {
         stability: newParams.stability,
         difficulty: newParams.difficulty,
