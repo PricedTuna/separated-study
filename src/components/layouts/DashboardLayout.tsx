@@ -357,18 +357,18 @@ export const DashboardLayout = () => {
           message: `Imported ${result.foldersImported} folders, ${result.documentsImported} documents, ${result.decksImported} decks, ${result.cardsImported} cards. Some errors occurred: ${result.errors.join(", ")}`,
         })
         triggerRefresh()
-        reloadFolders()
-        reloadDocuments()
-        reloadDecks()
+        reloadFolders(true)
+        reloadDocuments(true)
+        reloadDecks(true)
       } else {
         setImportResult({
           success: true,
           message: `Successfully imported ${result.foldersImported} folders, ${result.documentsImported} documents, ${result.decksImported} decks, and ${result.cardsImported} cards!`,
         })
         triggerRefresh()
-        reloadFolders()
-        reloadDocuments()
-        reloadDecks()
+        reloadFolders(true)
+        reloadDocuments(true)
+        reloadDecks(true)
       }
     } catch (e) {
       setImportResult({ success: false, message: `Import failed: ${(e as Error).message}` })

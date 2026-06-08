@@ -4,7 +4,6 @@ import { Folder, FileText, Clock } from "lucide-react"
 import { useDocuments } from "../hooks/use-documents"
 import { useFolders } from "../hooks/use-folders"
 import { useDataRefresh } from "../hooks/use-data-refresh"
-import { documentService, folderService } from "../lib/container"
 import { PageHeader } from "@/components/ui/PageHeader"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { LoadingState } from "@/components/ui/LoadingState"
@@ -16,8 +15,8 @@ import { FolderFormDialog } from "@/components/documents/FolderFormDialog"
 import { NewItemDropdown } from "@/components/documents/NewItemDropdown"
 
 export function DocumentsPage() {
-  const { documents, loading: docsLoading, create: createDoc, reload: reloadDocs } = useDocuments()
-  const { folders, loading: foldersLoading, create: createFolder, reload: reloadFolders } = useFolders()
+  const { documents, loading: docsLoading, create: createDoc, remove: removeDoc, reload: reloadDocs } = useDocuments()
+  const { folders, loading: foldersLoading, create: createFolder, remove: removeFolder, reload: reloadFolders } = useFolders()
   const { folderId } = useParams()
   const navigate = useNavigate()
   const { refreshKey } = useDataRefresh()
@@ -58,8 +57,8 @@ export function DocumentsPage() {
       didMountRef.current = true
       return
     }
-    reloadDocs()
-    reloadFolders()
+    reloadDocs(true)
+    reloadFolders(true)
   }, [refreshKey, reloadDocs, reloadFolders])
 
   // Computed values for display
@@ -72,12 +71,13 @@ export function DocumentsPage() {
     ? rootFolders.length > 0 || docsWithoutFolder.length > 0
     : subfolders.length > 0 || docsInFolder.length > 0
 
-  function handleDeleteDoc(id: string) {
-    documentService.delete(id).then(() => reloadDocs())
+  async function handleDeleteDoc(id: string) {
+    await removeDoc(id)
   }
 
-  function handleDeleteFolder(id: string) {
-    folderService.delete(id).then(() => reloadFolders())
+  async function handleDeleteFolder(id: string) {
+    await removeFolder(id)
+    await Promise.all([reloadDocs(true), reloadFolders(true)])
   }
 
   function formatDate(iso: string) {

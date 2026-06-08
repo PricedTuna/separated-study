@@ -5,7 +5,6 @@ import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
 import { useDecks } from "../hooks/use-decks"
 import { useDataRefresh } from "../hooks/use-data-refresh"
-import { deckService } from "../lib/container"
 import { PageHeader } from "@/components/ui/PageHeader"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { LoadingState } from "@/components/ui/LoadingState"
@@ -24,7 +23,7 @@ gsap.registerPlugin(useGSAP)
 type DeckSort = "recent" | "name"
 
 export function DecksPage() {
-  const { decks, loading, error: decksError, create, reload } = useDecks()
+  const { decks, loading, error: decksError, create, remove, reload } = useDecks()
   const navigate = useNavigate()
   const { refreshKey } = useDataRefresh()
   const didMountRef = useRef(false)
@@ -49,7 +48,7 @@ export function DecksPage() {
       didMountRef.current = true
       return
     }
-    reload()
+    reload(true)
   }, [refreshKey, reload])
 
   // Load global cards
@@ -101,8 +100,7 @@ export function DecksPage() {
   async function handleDelete(id: string) {
     setDeletingDeckId(id)
     try {
-      await deckService.delete(id)
-      reload()
+      await remove(id)
       await loadGlobalCards()
     } finally {
       setDeletingDeckId(null)

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react"
 import type { Document, CreateDocumentInput, UpdateDocumentInput } from "../domain/models/document"
 import { documentService } from "../lib/container"
 import { getCached, setCache, invalidateCache } from "../lib/cache"
+import { useSupabaseTableChanges } from "@/hooks/use-supabase-table-changes"
 
 const CACHE_KEY = "documents"
 
@@ -44,6 +45,21 @@ export function useDocuments() {
       setLoading(false)
     }
   }, [load])
+
+  const refreshFromDatabase = useCallback(async () => {
+    setError(null)
+    try {
+      const data = await load(true)
+      setDocuments(data)
+    } catch (e) {
+      setError((e as Error).message)
+    }
+  }, [load])
+
+  useSupabaseTableChanges({
+    table: "documents",
+    onChange: refreshFromDatabase,
+  })
 
   const create = useCallback(async (input: CreateDocumentInput): Promise<Document> => {
     const doc = await documentService.create(input)

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react"
 import type { Folder, CreateFolderInput, UpdateFolderInput } from "../domain/models/folder"
 import { folderService } from "../lib/container"
 import { getCached, setCache, invalidateCache } from "../lib/cache"
+import { useSupabaseTableChanges } from "@/hooks/use-supabase-table-changes"
 
 const CACHE_KEY = "folders"
 
@@ -44,6 +45,21 @@ export function useFolders() {
       setLoading(false)
     }
   }, [load])
+
+  const refreshFromDatabase = useCallback(async () => {
+    setError(null)
+    try {
+      const data = await load(true)
+      setFolders(data)
+    } catch (e) {
+      setError((e as Error).message)
+    }
+  }, [load])
+
+  useSupabaseTableChanges({
+    table: "folders",
+    onChange: refreshFromDatabase,
+  })
 
   const create = useCallback(async (input: CreateFolderInput): Promise<Folder> => {
     const folder = await folderService.create(input)

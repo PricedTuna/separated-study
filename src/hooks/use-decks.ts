@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react"
 import { deckService } from "../lib/container"
 import { getCached, setCache, invalidateCache } from "../lib/cache"
 import type { Deck, CreateDeckInput, UpdateDeckInput } from "../domain/models/deck"
+import { useSupabaseTableChanges } from "@/hooks/use-supabase-table-changes"
 
 const CACHE_KEY = "decks"
 
@@ -36,6 +37,22 @@ export function useDecks() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadDecks()
   }, [loadDecks])
+
+  const refreshFromDatabase = useCallback(async () => {
+    setError(null)
+    try {
+      const data = await deckService.getAll()
+      setCache(CACHE_KEY, data)
+      setDecks(data)
+    } catch (err) {
+      setError((err as Error).message)
+    }
+  }, [])
+
+  useSupabaseTableChanges({
+    table: "decks",
+    onChange: refreshFromDatabase,
+  })
 
   const create = useCallback(async (input: CreateDeckInput): Promise<Deck> => {
     const deck = await deckService.create(input)
