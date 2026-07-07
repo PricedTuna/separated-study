@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react"
-import { ArrowLeft, BrainCircuit, X, Check, Shuffle, RotateCcw, Keyboard } from "lucide-react"
+import { ArrowLeft, BrainCircuit, X, Check, Shuffle, RotateCcw, Keyboard, Loader2 } from "lucide-react"
 import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
 import type { Card, CardResult } from "@/domain/models/card"
@@ -46,6 +46,7 @@ export const StudySession = ({ initialCards, mode, onResult, onExit }: StudySess
   const [stats, setStats] = useState<Record<ResultStatKey, number>>({ again: 0, hard: 0, good: 0, easy: 0 })
   const [isExiting, setIsExiting] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [submittingGrade, setSubmittingGrade] = useState<CardResult | null>(null)
 
   const cardRef = useRef<HTMLDivElement>(null)
   const cardContentRef = useRef<HTMLDivElement>(null)
@@ -173,6 +174,7 @@ export const StudySession = ({ initialCards, mode, onResult, onExit }: StudySess
     isAnimatingRef.current = true
     setIsAnimating(true)
     setActionError(null)
+    setSubmittingGrade(result)
 
     const reviewedCard = activeCard
 
@@ -228,6 +230,7 @@ export const StudySession = ({ initialCards, mode, onResult, onExit }: StudySess
     } catch (err) {
       console.error("Study action failed:", err)
       setActionError("Could not save that review. Try again.")
+      setSubmittingGrade(null)
       const restoreCard = contextSafe(() => {
         return gsap.to(cardRef.current, {
           y: 0,
@@ -240,6 +243,7 @@ export const StudySession = ({ initialCards, mode, onResult, onExit }: StudySess
     } finally {
       isAnimatingRef.current = false
       setIsAnimating(false)
+      setSubmittingGrade(null)
     }
   }, [activeCard, cards, contextSafe, currentIndex, flipped, mode, onResult, repeatIncorrect, requeuedCardIds])
 
@@ -350,6 +354,15 @@ export const StudySession = ({ initialCards, mode, onResult, onExit }: StudySess
                 Click to {flipped ? "see question" : "reveal answer"}
               </p>
             </div>
+
+            {submittingGrade && (
+              <div className="absolute inset-0 bg-white/80 rounded-[32px] flex items-center justify-center z-10">
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="w-8 h-8 text-[#5b76fe] animate-spin" />
+                  <span className="text-sm font-medium text-[#555a6a]">Saving...</span>
+                </div>
+              </div>
+            )}
           </div>
           )}
 
